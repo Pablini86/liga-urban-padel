@@ -1629,75 +1629,114 @@ function printHorarios(){
   const d=getImpData();if(!d)return;
   const{liga,jornada,grupos,lid,jId}=d;
   const ps=S.players.filter(p=>p.liga===lid);
-  // Ordenar por grupo (no por turno)
   const gruposData=grupos.map(g=>{
     const gms=S.partidos.filter(m=>m.jornadaId===jId&&m.grupo===g);if(!gms.length)return null;
-    return{g,cancha:gms[0].cancha,turno:gms[0].turno,players:ps.filter(p=>p.grupo===g).sort((a,b)=>a.orden-b.orden)};
+    return{g,cancha:gms[0].cancha,turno:gms[0].turno,
+      players:ps.filter(p=>p.grupo===g).sort((a,b)=>a.orden-b.orden)};
   }).filter(Boolean);
 
-  let html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${PRINT_CSS}
-    .page{padding:0;min-height:297mm;}
-    /* Header */
-    .hdr-band{background:${UPL_BLACK};color:#fff;padding:5mm 15mm 4mm;display:flex;align-items:center;justify-content:space-between;}
-    .hdr-brand{font-family:'Bebas Neue',sans-serif;font-size:20pt;letter-spacing:4px;color:${UPL_GREEN};}
-    .hdr-brand span{color:#fff;}
-    .hdr-right{text-align:right;font-size:9pt;color:#aaa;}
-    .hdr-right b{color:#fff;font-size:11pt;}
-    .accent-stripe{height:2.5mm;background:${UPL_GREEN};}
-    /* Content */
-    .content{padding:5mm 12mm;}
-    .section-title{font-family:'Bebas Neue',sans-serif;font-size:14pt;letter-spacing:3px;
-      color:${UPL_BLACK};border-bottom:2px solid ${UPL_GREEN};padding-bottom:1.5mm;margin-bottom:4mm;}
-    /* Grid de grupos */
-    .grupos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3mm;}
-    .grupo-card{border:1.5px solid #222;border-radius:3px;overflow:hidden;break-inside:avoid;}
-    .grupo-card-hdr{background:${UPL_BLACK};color:#fff;padding:1.5mm 3mm;
-      display:flex;align-items:center;justify-content:space-between;}
-    .gc-num{font-family:'Bebas Neue',sans-serif;font-size:14pt;letter-spacing:1px;color:${UPL_GREEN};}
-    .gc-meta{text-align:right;font-size:7.5pt;color:#aaa;line-height:1.4;}
-    .gc-meta b{color:#fff;}
-    .grupo-card-body{padding:1.5mm 3mm;}
-    .player-row{display:flex;align-items:center;gap:2mm;padding:.6mm 0;border-bottom:.5px solid #f0f0f0;}
-    .player-row:last-child{border-bottom:none;}
-    .pr-num{font-family:'Bebas Neue',sans-serif;font-size:11pt;color:#ccc;min-width:10px;text-align:center;}
-    .pr-name{font-size:8.5pt;font-weight:500;}
+  // Split into 2 columns for the page
+  const half = Math.ceil(gruposData.length/2);
+  const col1 = gruposData.slice(0, half);
+  const col2 = gruposData.slice(half);
+
+  function renderCol(grupos){
+    return grupos.map(({g,cancha,turno,players})=>`
+      <div class="grupo-block">
+        ${players.slice(0,4).map((p,i)=>`
+          <div class="prow ${i===0?'first':''}">
+            <span class="pname">${p.nombre}</span>
+            ${i===0?`<span class="cancha-col">${cancha}</span><span class="hora-col">${turno}</span>`:'<span class="cancha-col"></span><span class="hora-col"></span>'}
+          </div>`).join('')}
+        <div class="grupo-spacer"></div>
+      </div>`).join('');
+  }
+
+  let html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;800&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Outfit',sans-serif;background:#fff;color:#000;}
+    @media print{body{margin:0;}@page{size:A4 portrait;margin:0;}}
+
+    .page{width:210mm;min-height:297mm;padding:0;position:relative;}
+
+    /* Header negro */
+    .hdr{background:#0a0a0a;padding:5mm 12mm 4mm;display:flex;align-items:flex-end;justify-content:space-between;}
+    .hdr-logo{font-family:'Bebas Neue',sans-serif;font-size:24pt;letter-spacing:5px;color:#b8d400;line-height:1;}
+    .hdr-logo span{color:#fff;}
+    .hdr-sub{font-size:7.5pt;color:#666;margin-top:1mm;letter-spacing:.5px;}
+    .hdr-right{text-align:right;}
+    .hdr-liga{font-size:8pt;color:#888;letter-spacing:.5px;text-transform:uppercase;}
+    .hdr-jornada{font-family:'Bebas Neue',sans-serif;font-size:28pt;letter-spacing:3px;color:#fff;line-height:1;}
+    .hdr-fecha{font-size:8.5pt;color:#b8d400;margin-top:.5mm;}
+
+    /* Stripe verde */
+    .stripe{height:3mm;background:#b8d400;}
+
+    /* Encabezado de columnas */
+    .col-headers{display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:2px solid #0a0a0a;margin:3mm 12mm 0;}
+    .ch{display:flex;padding:1.5mm 0 1mm;}
+    .ch-name{flex:1;font-size:7pt;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#666;}
+    .ch-cancha{width:14mm;font-size:7pt;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#666;text-align:center;}
+    .ch-hora{width:22mm;font-size:7pt;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#666;text-align:right;}
+    .ch-sep{width:6mm;}
+
+    /* Contenido en 2 columnas */
+    .body{display:grid;grid-template-columns:1fr 6mm 1fr;margin:0 12mm;padding-top:1mm;}
+    .col-sep{border-left:1px solid #e0e0e0;margin:0 0;}
+
+    /* Grupo */
+    .grupo-block{margin-bottom:0;}
+    .grupo-spacer{height:3mm;border-bottom:1px solid #ececec;margin-bottom:1mm;}
+
+    /* Fila jugador */
+    .prow{display:flex;align-items:center;padding:.7mm 0;border-bottom:.3px solid #f5f5f5;}
+    .prow.first .pname{font-weight:700;font-size:9pt;}
+    .pname{flex:1;font-size:9pt;font-weight:400;padding-right:2mm;}
+    .cancha-col{width:14mm;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:11pt;color:#0a0a0a;}
+    .hora-col{width:22mm;text-align:right;font-size:8pt;font-weight:600;color:#0a0a0a;}
+    .prow:not(.first) .cancha-col,.prow:not(.first) .hora-col{visibility:hidden;}
+
     /* Footer */
-    .foot{margin-top:5mm;text-align:center;font-size:7pt;color:#bbb;}
-    .foot b{color:#888;}
+    .foot{position:absolute;bottom:5mm;left:0;right:0;text-align:center;
+      font-size:7pt;color:#bbb;letter-spacing:.3px;}
+
   </style></head><body>
   <div class="page">
-    <div class="accent-stripe"></div>
-    <div class="hdr-band">
+    <div class="hdr">
       <div>
-        <div class="hdr-brand">URBAN <span>PADEL</span> LIFE</div>
-        <div style="font-size:8pt;color:#888;margin-top:1mm">Av. de las Rosas 171, Col. Chapalita · Guadalajara</div>
+        <div class="hdr-logo">URBAN <span>PADEL</span> LIFE</div>
+        <div class="hdr-sub">Av. de las Rosas 171 · Col. Chapalita · Guadalajara</div>
       </div>
       <div class="hdr-right">
-        JORNADA <b>${jornada.num}</b><br>
-        <b>${jornada.fecha}</b><br>
-        ${jornada.turnos.join(' · ')}
+        <div class="hdr-liga">${liga.nombre}</div>
+        <div class="hdr-jornada">JORNADA ${jornada.num}</div>
+        <div class="hdr-fecha">${jornada.fecha} &nbsp;·&nbsp; ${jornada.turnos.join(' · ')}</div>
       </div>
     </div>
-    <div class="content">
-      <div class="section-title">HORARIOS & GRUPOS — ${liga.nombre.toUpperCase()}</div>
-      <div class="grupos-grid">
-        ${gruposData.map(({g,cancha,turno,players})=>`
-          <div class="grupo-card">
-            <div class="grupo-card-hdr">
-              <div class="gc-num">GRUPO ${g}</div>
-              <div class="gc-meta"><b>${cancha}</b><br>${turno}</div>
-            </div>
-            <div class="grupo-card-body">
-              ${players.slice(0,4).map((p,i)=>`
-                <div class="player-row">
-                  <span class="pr-num">${i+1}</span>
-                  <span class="pr-name">${p.nombre}</span>
-                </div>`).join('')}
-            </div>
-          </div>`).join('')}
+    <div class="stripe"></div>
+
+    <div class="col-headers">
+      <div class="ch">
+        <span class="ch-name">NOMBRE</span>
+        <span class="ch-cancha">CANCHA</span>
+        <span class="ch-hora">HORARIO</span>
       </div>
-      <div class="foot">Urban Padel Life &nbsp;·&nbsp; <b>${liga.nombre}</b> &nbsp;·&nbsp; Jornada ${jornada.num} · ${jornada.fecha}</div>
+      <div class="ch-sep"></div>
+      <div class="ch">
+        <span class="ch-name">NOMBRE</span>
+        <span class="ch-cancha">CANCHA</span>
+        <span class="ch-hora">HORARIO</span>
+      </div>
     </div>
+
+    <div class="body">
+      <div>${renderCol(col1)}</div>
+      <div class="col-sep"></div>
+      <div>${renderCol(col2)}</div>
+    </div>
+
+    <div class="foot">Urban Padel Life &nbsp;·&nbsp; <b style="color:#888">${liga.nombre}</b> &nbsp;·&nbsp; Jornada ${jornada.num} &nbsp;·&nbsp; ${jornada.fecha}</div>
   </div></body></html>`;
   openPrint(html);
 }
