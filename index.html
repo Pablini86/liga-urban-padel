@@ -365,10 +365,11 @@ select option{background:var(--dark);}
 
   <!-- IMPRIMIR -->
   <div id="at-imprimir" style="display:none">
-    <div class="g2" style="margin-bottom:1rem">
+    <div class="g2" style="margin-bottom:1.1rem">
       <div class="fi"><label>Liga</label><select id="iml" onchange="renderImpPrev()"></select></div>
-      <div class="fi"><label>Jornada</label><select id="imj"><option value="">— selecciona —</option></select></div>
+      <div class="fi"><label>Jornada</label><select id="imj" onchange="renderImpPrev()"><option value="">— selecciona —</option></select></div>
     </div>
+    <div id="imp-jornada-info" style="margin-bottom:1rem"></div>
     <div style="display:flex;gap:.65rem;flex-wrap:wrap;margin-bottom:1.3rem">
       <button class="btn bp" onclick="printAnotaciones()">🖨️ Hojas de Anotación</button>
       <button class="btn bs" onclick="printHorarios()">📋 Horarios & Grupos</button>
@@ -1465,6 +1466,21 @@ function renderImpPrev(){
     const cur=imjSel.value;
     imjSel.innerHTML='<option value="">— selecciona —</option>'+js.map(j=>`<option value="${j.id}"${j.id===cur?' selected':''}>Jornada ${j.num} · ${j.fecha}</option>`).join('');
   }
+  const jId=document.getElementById('imj')?.value;
+  const infoEl=document.getElementById('imp-jornada-info');
+  if(!infoEl)return;
+  if(!jId){infoEl.innerHTML='';return;}
+  const j=S.jornadas.find(x=>x.id===jId);
+  if(!j){infoEl.innerHTML='';return;}
+  const ms=S.partidos.filter(p=>p.jornadaId===jId);
+  const grupos=[...new Set(ms.map(m=>m.grupo))].length;
+  const fin=ms.filter(m=>m.finalizado&&m.gA!==null).length;
+  infoEl.innerHTML=`<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.7rem 1rem;font-size:.8rem;display:flex;gap:1.5rem;flex-wrap:wrap">
+    <span>📅 <b>${j.fecha}</b></span>
+    <span>🎾 <b>${grupos}</b> grupos</span>
+    <span>⚡ <b>${fin}/${ms.length}</b> sets capturados</span>
+    <span>🕐 ${j.turnos.join(' · ')}</span>
+  </div>`;
 }
 function getImpData(){
   const lid=document.getElementById('iml')?.value;
@@ -1473,157 +1489,283 @@ function getImpData(){
   return{liga:ligaById(lid),jornada:S.jornadas.find(j=>j.id===jId),
     grupos:[...new Set(S.partidos.filter(p=>p.jornadaId===jId).map(m=>m.grupo))].sort((a,b)=>a-b),lid,jId};
 }
+function openPrint(html){
+  const w=window.open('','_blank');
+  if(!w){toast('⚠️ Permite ventanas emergentes para imprimir',1);return;}
+  w.document.write(html);w.document.close();setTimeout(()=>w.print(),700);
+}
+
+const PRINT_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;800&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Outfit',sans-serif;background:#fff;color:#000;}
+  @media print{body{margin:0;}@page{size:A4;margin:0;}}
+`;
+
+// Accent color Urban Padel
+const UPL_GREEN = '#b8d400';
+const UPL_BLACK = '#0a0a0a';
+
 function printAnotaciones(){
   const d=getImpData();if(!d)return;
   const{liga,jornada,grupos,lid,jId}=d;
-  let html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;600;700&display=swap');
-    *{margin:0;padding:0;box-sizing:border-box;}
-    body{font-family:'Outfit',sans-serif;background:#fff;color:#000;}
-    .page{width:210mm;min-height:297mm;padding:13mm 15mm;page-break-after:always;background:#fff;}
+  let html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${PRINT_CSS}
+    .page{width:210mm;min-height:297mm;padding:0;page-break-after:always;background:#fff;position:relative;}
     .page:last-child{page-break-after:avoid;}
-    .hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:7mm;border-bottom:3px solid #000;padding-bottom:3.5mm;}
-    .hdr h1{font-family:'Bebas Neue',sans-serif;font-size:20pt;letter-spacing:3px;margin-bottom:1mm;}
-    .hdr p{font-size:8.5pt;color:#444;line-height:1.4;}
-    .gnum{font-family:'Bebas Neue',sans-serif;font-size:26pt;line-height:1;text-align:right;}
-    .set-b{border:2px solid #000;border-radius:2px;margin-bottom:4.5mm;overflow:hidden;}
-    .set-h{background:#000;color:#fff;padding:1.8mm 4mm;font-family:'Bebas Neue',sans-serif;font-size:11pt;letter-spacing:2px;}
-    .set-r{display:flex;align-items:center;padding:2.5mm 4mm;border-bottom:1px solid #ddd;}
-    .set-r:last-child{border-bottom:none;}
-    .tm{flex:1;font-size:9.5pt;font-weight:600;}
-    .tm.r{text-align:right;}
-    .vs{font-family:'Bebas Neue',sans-serif;font-size:10pt;color:#666;padding:0 3mm;}
-    .blank{display:inline-block;width:13mm;height:9mm;border-bottom:2.5px solid #000;vertical-align:middle;margin:0 2mm;}
-    .tot-b{border:2px solid #000;border-radius:2px;margin-top:5mm;}
-    .tot-h{background:#111;color:#fff;padding:1.8mm 4mm;font-family:'Bebas Neue',sans-serif;font-size:11pt;letter-spacing:2px;}
-    .tot-r{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;}
-    .tot-c{padding:2.5mm 3.5mm;border-right:1px solid #ddd;border-top:1px solid #ddd;}
-    .tot-c:last-child{border-right:none;}
-    .tot-n{font-weight:700;font-size:9pt;margin-bottom:.8mm;}
-    .tot-s{width:100%;height:13mm;border-bottom:2.5px solid #000;display:block;margin-top:1.5mm;}
-    .foot{margin-top:7mm;font-size:7.5pt;color:#888;text-align:center;}
-    @media print{body{margin:0;}@page{size:A4 portrait;margin:0;}}
+    /* Header band */
+    .hdr-band{background:${UPL_BLACK};color:#fff;padding:5mm 15mm 4mm;display:flex;align-items:center;justify-content:space-between;}
+    .hdr-brand{font-family:'Bebas Neue',sans-serif;font-size:22pt;letter-spacing:4px;color:${UPL_GREEN};}
+    .hdr-brand span{color:#fff;}
+    .hdr-meta{text-align:right;font-size:8pt;color:#aaa;line-height:1.5;}
+    .hdr-meta b{color:#fff;}
+    /* Grupo pill */
+    .grupo-pill{display:flex;align-items:center;gap:4mm;margin:5mm 15mm 4mm;}
+    .grupo-num{background:${UPL_GREEN};color:${UPL_BLACK};font-family:'Bebas Neue',sans-serif;
+      font-size:32pt;letter-spacing:2px;padding:1mm 5mm;border-radius:3px;line-height:1;}
+    .grupo-info{font-size:9pt;color:#444;line-height:1.6;}
+    .grupo-info b{color:#000;font-size:10pt;}
+    /* Sets */
+    .sets-wrap{padding:0 15mm;margin-bottom:4mm;}
+    .set-card{border:1.5px solid #222;border-radius:4px;margin-bottom:4mm;overflow:hidden;}
+    .set-hdr{background:${UPL_BLACK};color:${UPL_GREEN};padding:1.5mm 5mm;
+      font-family:'Bebas Neue',sans-serif;font-size:12pt;letter-spacing:3px;
+      display:flex;justify-content:space-between;align-items:center;}
+    .set-hdr span{color:#888;font-size:9pt;letter-spacing:1px;}
+    .set-teams{display:grid;grid-template-columns:1fr 40mm 1fr;gap:0;border-bottom:1px solid #ddd;}
+    .set-team{padding:3mm 5mm;}
+    .set-team.right{text-align:right;}
+    .set-team .p1{font-weight:700;font-size:10pt;}
+    .set-team .p2{font-size:8.5pt;color:#555;margin-top:.5mm;}
+    .set-score{display:flex;align-items:center;justify-content:center;gap:3mm;
+      border-left:1px solid #eee;border-right:1px solid #eee;}
+    .score-box{width:14mm;height:11mm;border-bottom:2.5px solid #000;display:inline-block;}
+    .set-dash{font-family:'Bebas Neue',sans-serif;font-size:14pt;color:#999;}
+    /* Total */
+    .total-section{margin:0 15mm;}
+    .total-hdr{background:${UPL_GREEN};color:${UPL_BLACK};padding:1.5mm 5mm;
+      font-family:'Bebas Neue',sans-serif;font-size:11pt;letter-spacing:2px;}
+    .total-grid{display:grid;grid-template-columns:repeat(4,1fr);border:1.5px solid #222;border-top:none;}
+    .total-cell{padding:2.5mm 3.5mm;border-right:1px solid #ddd;}
+    .total-cell:last-child{border-right:none;}
+    .tc-name{font-weight:700;font-size:9pt;border-bottom:1px solid #eee;padding-bottom:1.5mm;margin-bottom:1.5mm;}
+    .tc-line{font-size:7.5pt;color:#777;margin-bottom:1.5mm;}
+    .tc-blank{width:100%;height:12mm;border-bottom:2.5px solid #000;display:block;}
+    /* Footer */
+    .foot{position:absolute;bottom:8mm;left:0;right:0;text-align:center;
+      font-size:7pt;color:#bbb;letter-spacing:.5px;}
+    .foot b{color:#888;}
+    /* Accent stripe */
+    .accent-stripe{height:2.5mm;background:${UPL_GREEN};}
   </style></head><body>`;
+
   grupos.forEach(g=>{
     const gms=S.partidos.filter(m=>m.jornadaId===jId&&m.grupo===g).sort((a,b)=>a.set-b.set);
     if(!gms.length)return;
+    const pids=[gms[0].a1,gms[0].a2,gms[0].b1,gms[0].b2];
     html+=`<div class="page">
-      <div class="hdr">
-        <div><h1>URBAN PADEL LIFE</h1>
-          <p>LIGA: <b>${liga.nombre.toUpperCase()}</b><br>JORNADA: <b>${jornada.num}</b> &nbsp;·&nbsp; FECHA: <b>${jornada.fecha}</b><br>CANCHA: <b>${gms[0].cancha}</b> &nbsp;·&nbsp; HORARIO: <b>${gms[0].turno}</b></p></div>
-        <div class="gnum">GRUPO<br>${g}</div>
+      <div class="accent-stripe"></div>
+      <div class="hdr-band">
+        <div class="hdr-brand">URBAN <span>PADEL</span> LIFE</div>
+        <div class="hdr-meta">
+          LIGA: <b>${liga.nombre.toUpperCase()}</b><br>
+          JORNADA <b>${jornada.num}</b> &nbsp;·&nbsp; <b>${jornada.fecha}</b><br>
+          CANCHA: <b>${gms[0].cancha}</b> &nbsp;·&nbsp; HORARIO: <b>${gms[0].turno}</b>
+        </div>
       </div>
-      ${gms.map(m=>`<div class="set-b">
-        <div class="set-h">SET ${m.set}</div>
-        <div class="set-r">
-          <div class="tm">${pFN(m.a1)}<br><span style="font-size:8.5pt;color:#555">${pFN(m.a2)}</span></div>
-          <div class="vs">VS</div>
-          <div class="tm r">${pFN(m.b1)}<br><span style="font-size:8.5pt;color:#555">${pFN(m.b2)}</span></div>
+      <div class="grupo-pill">
+        <div class="grupo-num">GRUPO ${g}</div>
+        <div class="grupo-info">
+          <b>${pids.map(id=>pFN(id).split(' ')[0]).join(' · ')}</b><br>
+          3 sets · Formato americano · Games ganados − Games perdidos
         </div>
-        <div class="set-r" style="justify-content:center;padding:3.5mm">
-          <span class="blank"></span><span style="font-size:10pt;font-weight:700;margin:0 2mm">—</span><span class="blank"></span>
-        </div>
-      </div>`).join('')}
-      <div class="tot-b">
-        <div class="tot-h">TOTAL DE GAMES (DIFERENCIAL)</div>
-        <div class="tot-r">
-          ${[gms[0].a1,gms[0].a2,gms[0].b1,gms[0].b2].map(pid=>`<div class="tot-c">
-            <div class="tot-n">${pFN(pid)}</div>
-            <div style="font-size:7.5pt;color:#666;margin-bottom:1.5mm">G.ganados − G.perdidos =</div>
-            <span class="tot-s"></span>
+      </div>
+      <div class="sets-wrap">
+        ${gms.map(m=>`<div class="set-card">
+          <div class="set-hdr">SET ${m.set} <span>CANCHA ${gms[0].cancha} · ${gms[0].turno}</span></div>
+          <div class="set-teams">
+            <div class="set-team">
+              <div class="p1">${pFN(m.a1)}</div>
+              <div class="p2">${pFN(m.a2)}</div>
+            </div>
+            <div class="set-score">
+              <span class="score-box"></span>
+              <span class="set-dash">—</span>
+              <span class="score-box"></span>
+            </div>
+            <div class="set-team right">
+              <div class="p1">${pFN(m.b1)}</div>
+              <div class="p2">${pFN(m.b2)}</div>
+            </div>
+          </div>
+        </div>`).join('')}
+      </div>
+      <div class="total-section">
+        <div class="total-hdr">TOTAL · DIFERENCIAL DE GAMES (GANADOS − PERDIDOS)</div>
+        <div class="total-grid">
+          ${pids.map(pid=>`<div class="total-cell">
+            <div class="tc-name">${pFN(pid)}</div>
+            <div class="tc-line">G. Ganados − G. Perdidos =</div>
+            <span class="tc-blank"></span>
           </div>`).join('')}
         </div>
       </div>
-      <div class="foot">Urban Padel Life · Av. de las Rosas 171, Col. Chapalita · ${liga.nombre}</div>
+      <div class="foot">Urban Padel Life &nbsp;·&nbsp; Av. de las Rosas 171, Col. Chapalita, Guadalajara &nbsp;·&nbsp; <b>${liga.nombre}</b></div>
     </div>`;
   });
   html+='</body></html>';
-  const w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(()=>w.print(),600);
+  openPrint(html);
 }
+
 function printHorarios(){
   const d=getImpData();if(!d)return;
   const{liga,jornada,grupos,lid,jId}=d;
   const ps=S.players.filter(p=>p.liga===lid);
-  const byTurno={};
-  grupos.forEach(g=>{
-    const gms=S.partidos.filter(m=>m.jornadaId===jId&&m.grupo===g);if(!gms.length)return;
-    const turno=gms[0].turno,cancha=gms[0].cancha;
-    if(!byTurno[turno])byTurno[turno]=[];
-    byTurno[turno].push({g,cancha,players:ps.filter(p=>p.grupo===g)});
-  });
-  let html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;600;700&display=swap');
-    *{margin:0;padding:0;box-sizing:border-box;}
-    body{font-family:'Outfit',sans-serif;background:#fff;color:#000;}
-    .page{padding:11mm 14mm;}
-    h1{font-family:'Bebas Neue',sans-serif;font-size:24pt;letter-spacing:3px;border-bottom:3px solid #000;padding-bottom:2.5mm;margin-bottom:4.5mm;}
-    .tb{margin-bottom:6mm;}
-    .th{background:#000;color:#fff;padding:1.8mm 4.5mm;font-family:'Bebas Neue',sans-serif;font-size:13pt;letter-spacing:2px;margin-bottom:2.5mm;}
-    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2mm;}
-    .gc{border:1.5px solid #000;border-radius:2px;overflow:hidden;}
-    .gch{background:#111;color:#fff;padding:1.5mm 2.5mm;display:flex;justify-content:space-between;font-size:8.5pt;}
-    .gcn{font-family:'Bebas Neue',sans-serif;font-size:12pt;letter-spacing:1px;}
-    .gcb{padding:1.8mm 2.5mm;}
-    .pl{padding:.65mm 0;border-bottom:1px solid #eee;font-size:8.5pt;display:flex;align-items:center;gap:2mm;}
-    .pl:last-child{border-bottom:none;}
-    .pnum{font-family:'Bebas Neue',sans-serif;font-size:10pt;color:#999;min-width:13px;}
-    @media print{body{margin:0;}@page{size:A4;margin:0;}}
-  </style></head><body><div class="page">
-  <h1>JORNADA ${jornada.num} <span style="font-size:12pt;font-weight:400;letter-spacing:1px">— ${liga.nombre} · ${jornada.fecha}</span></h1>`;
-  Object.entries(byTurno).sort(([a],[b])=>a.localeCompare(b)).forEach(([turno,grps])=>{
-    html+=`<div class="tb"><div class="th">🕐 ${turno} hrs</div>
-      <div class="grid">${grps.map(({g,cancha,players})=>`<div class="gc">
-        <div class="gch"><span class="gcn">GRUPO ${g}</span><span>${cancha}</span></div>
-        <div class="gcb">${players.slice(0,4).map((p,i)=>`<div class="pl">
-          <span class="pnum">${i+1}</span><span>${p.nombre}</span></div>`).join('')}</div>
-      </div>`).join('')}</div></div>`;
-  });
-  html+='</div></body></html>';
-  const w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(()=>w.print(),600);
+  // Ordenar por grupo (no por turno)
+  const gruposData=grupos.map(g=>{
+    const gms=S.partidos.filter(m=>m.jornadaId===jId&&m.grupo===g);if(!gms.length)return null;
+    return{g,cancha:gms[0].cancha,turno:gms[0].turno,players:ps.filter(p=>p.grupo===g).sort((a,b)=>a.orden-b.orden)};
+  }).filter(Boolean);
+
+  let html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${PRINT_CSS}
+    .page{padding:0;min-height:297mm;}
+    /* Header */
+    .hdr-band{background:${UPL_BLACK};color:#fff;padding:5mm 15mm 4mm;display:flex;align-items:center;justify-content:space-between;}
+    .hdr-brand{font-family:'Bebas Neue',sans-serif;font-size:20pt;letter-spacing:4px;color:${UPL_GREEN};}
+    .hdr-brand span{color:#fff;}
+    .hdr-right{text-align:right;font-size:9pt;color:#aaa;}
+    .hdr-right b{color:#fff;font-size:11pt;}
+    .accent-stripe{height:2.5mm;background:${UPL_GREEN};}
+    /* Content */
+    .content{padding:5mm 12mm;}
+    .section-title{font-family:'Bebas Neue',sans-serif;font-size:14pt;letter-spacing:3px;
+      color:${UPL_BLACK};border-bottom:2px solid ${UPL_GREEN};padding-bottom:1.5mm;margin-bottom:4mm;}
+    /* Grid de grupos */
+    .grupos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3mm;}
+    .grupo-card{border:1.5px solid #222;border-radius:3px;overflow:hidden;break-inside:avoid;}
+    .grupo-card-hdr{background:${UPL_BLACK};color:#fff;padding:1.5mm 3mm;
+      display:flex;align-items:center;justify-content:space-between;}
+    .gc-num{font-family:'Bebas Neue',sans-serif;font-size:14pt;letter-spacing:1px;color:${UPL_GREEN};}
+    .gc-meta{text-align:right;font-size:7.5pt;color:#aaa;line-height:1.4;}
+    .gc-meta b{color:#fff;}
+    .grupo-card-body{padding:1.5mm 3mm;}
+    .player-row{display:flex;align-items:center;gap:2mm;padding:.6mm 0;border-bottom:.5px solid #f0f0f0;}
+    .player-row:last-child{border-bottom:none;}
+    .pr-num{font-family:'Bebas Neue',sans-serif;font-size:11pt;color:#ccc;min-width:10px;text-align:center;}
+    .pr-name{font-size:8.5pt;font-weight:500;}
+    /* Footer */
+    .foot{margin-top:5mm;text-align:center;font-size:7pt;color:#bbb;}
+    .foot b{color:#888;}
+  </style></head><body>
+  <div class="page">
+    <div class="accent-stripe"></div>
+    <div class="hdr-band">
+      <div>
+        <div class="hdr-brand">URBAN <span>PADEL</span> LIFE</div>
+        <div style="font-size:8pt;color:#888;margin-top:1mm">Av. de las Rosas 171, Col. Chapalita · Guadalajara</div>
+      </div>
+      <div class="hdr-right">
+        JORNADA <b>${jornada.num}</b><br>
+        <b>${jornada.fecha}</b><br>
+        ${jornada.turnos.join(' · ')}
+      </div>
+    </div>
+    <div class="content">
+      <div class="section-title">HORARIOS & GRUPOS — ${liga.nombre.toUpperCase()}</div>
+      <div class="grupos-grid">
+        ${gruposData.map(({g,cancha,turno,players})=>`
+          <div class="grupo-card">
+            <div class="grupo-card-hdr">
+              <div class="gc-num">GRUPO ${g}</div>
+              <div class="gc-meta"><b>${cancha}</b><br>${turno}</div>
+            </div>
+            <div class="grupo-card-body">
+              ${players.slice(0,4).map((p,i)=>`
+                <div class="player-row">
+                  <span class="pr-num">${i+1}</span>
+                  <span class="pr-name">${p.nombre}</span>
+                </div>`).join('')}
+            </div>
+          </div>`).join('')}
+      </div>
+      <div class="foot">Urban Padel Life &nbsp;·&nbsp; <b>${liga.nombre}</b> &nbsp;·&nbsp; Jornada ${jornada.num} · ${jornada.fecha}</div>
+    </div>
+  </div></body></html>`;
+  openPrint(html);
 }
+
 function printTabla(){
   const lid=document.getElementById('iml')?.value;if(!lid){toast('⚠️ Selecciona liga',1);return;}
   const liga=ligaById(lid);const st=calcGlobal(lid);
   const js=S.jornadas.filter(j=>j.liga===lid).sort((a,b)=>a.num-b.num);
-  let html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;600;700&display=swap');
-    *{margin:0;padding:0;box-sizing:border-box;}
-    body{font-family:'Outfit',sans-serif;font-size:8.5pt;}
-    .page{padding:11mm 14mm;}
-    h1{font-family:'Bebas Neue',sans-serif;font-size:20pt;letter-spacing:3px;border-bottom:3px solid #000;padding-bottom:2.5mm;margin-bottom:4.5mm;}
-    table{width:100%;border-collapse:collapse;}
-    th{background:#000;color:#fff;padding:1.8mm 2.2mm;text-align:left;font-size:7pt;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;}
-    td{padding:1.8mm 2.2mm;border-bottom:1px solid #ddd;white-space:nowrap;}
-    tr:nth-child(even){background:#f8f8f8;}
-    .rk{font-family:'Bebas Neue',sans-serif;font-size:12pt;color:#999;}
+  let html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${PRINT_CSS}
+    .page{padding:0;min-height:297mm;}
+    .hdr-band{background:${UPL_BLACK};color:#fff;padding:5mm 15mm 4mm;display:flex;align-items:center;justify-content:space-between;}
+    .hdr-brand{font-family:'Bebas Neue',sans-serif;font-size:20pt;letter-spacing:4px;color:${UPL_GREEN};}
+    .hdr-brand span{color:#fff;}
+    .hdr-right{text-align:right;font-size:9pt;color:#aaa;}
+    .hdr-right b{color:#fff;font-size:11pt;}
+    .accent-stripe{height:2.5mm;background:${UPL_GREEN};}
+    .content{padding:5mm 12mm;}
+    .section-title{font-family:'Bebas Neue',sans-serif;font-size:14pt;letter-spacing:3px;
+      color:${UPL_BLACK};border-bottom:2px solid ${UPL_GREEN};padding-bottom:1.5mm;margin-bottom:4mm;}
+    table{width:100%;border-collapse:collapse;font-size:8pt;}
+    thead tr{background:${UPL_BLACK};}
+    th{color:#fff;padding:2mm 2mm;text-align:left;font-size:7pt;letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;}
+    th.acc{color:${UPL_GREEN};}
+    tbody tr{border-bottom:.5px solid #e8e8e8;}
+    tbody tr:nth-child(even){background:#f7f7f7;}
+    tbody tr:first-child td .rk{color:${UPL_GREEN};}
+    td{padding:1.8mm 2mm;white-space:nowrap;font-size:8pt;}
+    .rk{font-family:'Bebas Neue',sans-serif;font-size:12pt;color:#bbb;}
+    .pname{font-weight:700;}
+    .gr{display:inline-block;background:${UPL_BLACK};color:${UPL_GREEN};
+      font-family:'Bebas Neue',sans-serif;font-size:9pt;padding:0 3px;border-radius:2px;}
     .pv{font-weight:700;color:#1a7a1a;}
-    .nv{font-weight:700;color:#cc0000;}
+    .nv{font-weight:700;color:#cc2200;}
     .tot{font-family:'Bebas Neue',sans-serif;font-size:13pt;}
-    @media print{body{margin:0;}@page{size:A4;margin:0;}}
-  </style></head><body><div class="page">
-  <h1>TABLA GENERAL — ${liga.nombre}</h1>
-  <table><thead><tr><th>#</th><th>NOMBRE</th><th>GR</th>
-    ${js.map(j=>`<th>J${j.num}</th>`).join('')}<th>TOTAL</th>
-  </tr></thead><tbody>
-  ${st.map((s,i)=>{
-    const jPts=js.map(j=>{
-      const pts=calcPtsJornada(s.player.id,lid,j.id);
-      if(pts===null)return'<td>—</td>';
-      return`<td class="${pts>0?'pv':pts<0?'nv':''}">${pts>0?'+':''}${pts}</td>`;
-    });
-    while(jPts.length<liga.nj)jPts.push('<td style="color:#ccc">—</td>');
-    return`<tr><td><span class="rk">${i+1}</span></td>
-      <td style="font-weight:600">${s.player.nombre}</td>
-      <td>G${s.player.grupo}</td>${jPts.join('')}
-      <td><span class="tot ${s.total>=0?'pv':'nv'}">${s.total>0?'+':''}${s.total}</span></td>
-    </tr>`;
-  }).join('')}</tbody></table>
-  <p style="font-size:7pt;color:#888;margin-top:4mm;text-align:center">Urban Padel Life · ${liga.nombre} · ${new Date().toLocaleDateString('es-MX')}</p>
+    .foot{margin-top:4mm;text-align:center;font-size:7pt;color:#bbb;}
+    .foot b{color:#888;}
+    /* Top 3 highlight */
+    tbody tr:nth-child(1) td{background:#fffce6;}
+    tbody tr:nth-child(2) td{background:#fafafa;}
+    tbody tr:nth-child(3) td{background:#fff8f0;}
+  </style></head><body>
+  <div class="page">
+    <div class="accent-stripe"></div>
+    <div class="hdr-band">
+      <div>
+        <div class="hdr-brand">URBAN <span>PADEL</span> LIFE</div>
+        <div style="font-size:8pt;color:#888;margin-top:1mm">Av. de las Rosas 171, Col. Chapalita · Guadalajara</div>
+      </div>
+      <div class="hdr-right">TABLA GENERAL<br><b>${liga.nombre}</b><br>${new Date().toLocaleDateString('es-MX')}</div>
+    </div>
+    <div class="content">
+      <div class="section-title">TABLA GENERAL — ${liga.nombre.toUpperCase()}</div>
+      <table><thead><tr>
+        <th>#</th><th>NOMBRE</th><th>GR</th>
+        ${js.map(j=>`<th>J${j.num}</th>`).join('')}
+        <th class="acc">TOTAL</th>
+      </tr></thead><tbody>
+      ${st.map((s,i)=>{
+        const jPts=js.map(j=>{
+          const pts=calcPtsJornada(s.player.id,lid,j.id);
+          if(pts===null)return'<td style="color:#ccc">—</td>';
+          return`<td class="${pts>0?'pv':pts<0?'nv':''}">${pts>0?'+':''}${pts}</td>`;
+        });
+        while(jPts.length<liga.nj)jPts.push('<td style="color:#ddd">—</td>');
+        return`<tr>
+          <td><span class="rk">${i+1}</span></td>
+          <td class="pname">${s.player.nombre}</td>
+          <td><span class="gr">G${s.player.grupo}</span></td>
+          ${jPts.join('')}
+          <td><span class="tot ${s.total>=0?'pv':'nv'}">${s.total>0?'+':''}${s.total}</span></td>
+        </tr>`;
+      }).join('')}
+      </tbody></table>
+      <div class="foot">Urban Padel Life &nbsp;·&nbsp; <b>${liga.nombre}</b> &nbsp;·&nbsp; Impreso ${new Date().toLocaleDateString('es-MX')}</div>
+    </div>
   </div></body></html>`;
-  const w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(()=>w.print(),600);
+  openPrint(html);
 }
 
 // ═══════════════════ PLAYER MODAL ═══════════════════
