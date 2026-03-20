@@ -1295,6 +1295,9 @@ function showAT(id,btn){
   document.querySelectorAll('.it').forEach(t=>t.classList.remove('active'));
   document.getElementById('at-'+id).style.display='';btn.classList.add('active');
   if(id==='jornada') renderScheduleGrid();
+  if(id==='imprimir'){ populateSels(); renderImpPrev(); }
+  if(id==='resultados'){ populateSels(); renderCaptura(); }
+  if(id==='promociones'){ populateSels(); renderPromoP(); }
 }
 function renderLigasAdmin(){
   const el=document.getElementById('ligas-list');if(!el)return;
@@ -1459,27 +1462,33 @@ function showXLR(type,html){
 // ═══════════════════ IMPRIMIR ═══════════════════
 function renderImpPrev(){
   populateSels();
-  const lid=document.getElementById('iml')?.value;
-  const imjSel=document.getElementById('imj');
-  if(lid&&imjSel){
-    const js=S.jornadas.filter(j=>j.liga===lid).sort((a,b)=>b.num-a.num);
-    const cur=imjSel.value;
-    imjSel.innerHTML='<option value="">— selecciona —</option>'+js.map(j=>`<option value="${j.id}"${j.id===cur?' selected':''}>Jornada ${j.num} · ${j.fecha}</option>`).join('');
+  const lid = document.getElementById('iml')?.value;
+  const imjSel = document.getElementById('imj');
+  if(lid && imjSel){
+    const js = S.jornadas.filter(j=>j.liga===lid).sort((a,b)=>a.num-b.num);
+    const cur = imjSel.value;
+    imjSel.innerHTML = '<option value="">— selecciona —</option>' +
+      js.map(j=>`<option value="${j.id}"${j.id===cur?' selected':''}>Jornada ${j.num} · ${j.fecha}</option>`).join('');
+    // Auto-select first jornada if none selected
+    if(!imjSel.value && js.length) imjSel.value = js[0].id;
   }
-  const jId=document.getElementById('imj')?.value;
-  const infoEl=document.getElementById('imp-jornada-info');
-  if(!infoEl)return;
-  if(!jId){infoEl.innerHTML='';return;}
-  const j=S.jornadas.find(x=>x.id===jId);
-  if(!j){infoEl.innerHTML='';return;}
-  const ms=S.partidos.filter(p=>p.jornadaId===jId);
-  const grupos=[...new Set(ms.map(m=>m.grupo))].length;
-  const fin=ms.filter(m=>m.finalizado&&m.gA!==null).length;
-  infoEl.innerHTML=`<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.7rem 1rem;font-size:.8rem;display:flex;gap:1.5rem;flex-wrap:wrap">
-    <span>📅 <b>${j.fecha}</b></span>
-    <span>🎾 <b>${grupos}</b> grupos</span>
-    <span>⚡ <b>${fin}/${ms.length}</b> sets capturados</span>
-    <span>🕐 ${j.turnos.join(' · ')}</span>
+  const jId = document.getElementById('imj')?.value;
+  const infoEl = document.getElementById('imp-jornada-info');
+  if(!infoEl) return;
+  if(!jId){ infoEl.innerHTML=''; return; }
+  const j = S.jornadas.find(x=>x.id===jId);
+  if(!j){ infoEl.innerHTML=''; return; }
+  const ms = S.partidos.filter(p=>p.jornadaId===jId);
+  const grupos = [...new Set(ms.map(m=>m.grupo))].length;
+  const fin = ms.filter(m=>m.finalizado && m.gA!==null).length;
+  const pendientes = ms.length - fin;
+  infoEl.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.7rem 1rem;
+    display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center">
+    <span style="font-size:.8rem">📅 <b style="color:var(--text)">${j.fecha||'Sin fecha'}</b></span>
+    <span style="font-size:.8rem">🎾 <b style="color:var(--text)">${grupos}</b> grupos</span>
+    <span style="font-size:.8rem">⚡ <b style="color:var(--accent3)">${fin}</b>/${ms.length} sets capturados</span>
+    ${pendientes>0?`<span style="font-size:.8rem;color:var(--muted2)">(${pendientes} pendientes — puedes imprimir horarios sin resultados)</span>`:'<span style="font-size:.8rem;color:var(--accent3)">✓ Jornada completa</span>'}
+    <span style="font-size:.8rem">🕐 ${j.turnos.join(' · ')}</span>
   </div>`;
 }
 function getImpData(){
