@@ -905,19 +905,40 @@ function genJornada(){
 // ═══════════════════ RESULTS ═══════════════════
 // ─── CAPTURA POR GRUPO ────────────────────────────────────────────
 let capturaGrupoActivo = null;
+// Estado local del formulario: { jId_g: { scores: [[a1,b1],[a2,b2],[a3,b3]], ausentes: Set } }
+let capturaState = {};
+
+function csKey(jId, g){ return `${jId}_${g}`; }
+
+function getCS(jId, g){
+  const k = csKey(jId, g);
+  if(!capturaState[k]){
+    const gms = S.partidos.filter(m=>m.jornadaId===jId&&m.grupo===g).sort((a,b)=>a.set-b.set);
+    capturaState[k] = {
+      scores: gms.map(m => m.finalizado ? [m.gA, m.gB] : [null, null]),
+      ausentes: new Set(S.players.filter(p=>p['ausente_j_'+jId]&&gms.some(m=>[m.a1,m.a2,m.b1,m.b2].includes(p.id))).map(p=>p.id))
+    };
+  }
+  return capturaState[k];
+}
 
 function renderCaptura(){
   const lid = document.getElementById('rl')?.value;
   const jSel = document.getElementById('rj');
-  // Poblar jornadas
   if(lid && jSel){
     const js = S.jornadas.filter(j=>j.liga===lid).sort((a,b)=>b.num-a.num);
     const cur = jSel.value;
+    // Reset capture state when jornada changes
+    if(jSel.value !== (jSel.dataset.prev||'')) {
+      capturaState = {};
+      capturaGrupoActivo = null;
+    }
+    jSel.dataset.prev = jSel.value;
     jSel.innerHTML = '<option value="">— selecciona —</option>' +
       js.map(j=>`<option value="${j.id}"${j.id===cur?' selected':''}>Jornada ${j.num} · ${j.fecha}</option>`).join('');
   }
   const jId = document.getElementById('rj')?.value;
-  if(!jId){ 
+  if(!jId){
     document.getElementById('captura-progress').innerHTML='';
     document.getElementById('captura-nav').innerHTML='';
     document.getElementById('captura-grupo').innerHTML='';
@@ -927,35 +948,38 @@ function renderCaptura(){
   const grupos = [...new Set(ms.map(m=>m.grupo))].sort((a,b)=>a-b);
   if(!capturaGrupoActivo || !grupos.includes(capturaGrupoActivo)) capturaGrupoActivo = grupos[0];
 
-  // Barra de progreso
-  const fin = ms.filter(m=>m.finalizado).length;
-  const total = ms.length;
-  const pct = total ? Math.round(fin/total*100) : 0;
-  const grpFin = grupos.filter(g=>ms.filter(m=>m.grupo===g).every(m=>m.finalizado)).length;
+  // Progreso — solo contar grupos donde los 3 sets tienen score capturado
+  const grpFin = grupos.filter(g=>{
+    const gms = ms.filter(m=>m.grupo===g);
+    return gms.length>0 && gms.every(m=>m.finalizado && m.gA!==null && m.gB!==null);
+  }).length;
+  const setsFin = ms.filter(m=>m.finalizado && m.gA!==null).length;
+  const pct = grupos.length ? Math.round(grpFin/grupos.length*100) : 0;
+
   document.getElementById('captura-progress').innerHTML = `
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.85rem 1rem">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
-        <span style="font-size:.78rem;font-weight:600">Progreso Jornada</span>
-        <span style="font-family:'Bebas Neue';font-size:1.2rem;color:${pct===100?'var(--accent3)':'var(--accent)'}">${grpFin}/${grupos.length} grupos · ${fin}/${total} sets</span>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.8rem 1rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.45rem">
+        <span style="font-size:.76rem;font-weight:600">Progreso captura</span>
+        <span style="font-family:'Bebas Neue';font-size:1.15rem;color:${pct===100?'var(--accent3)':'var(--accent)'}">
+          ${grpFin}/${grupos.length} grupos completos
+        </span>
       </div>
-      <div style="height:8px;background:var(--border2);border-radius:4px;overflow:hidden">
+      <div style="height:7px;background:var(--border2);border-radius:4px;overflow:hidden">
         <div style="height:100%;width:${pct}%;background:${pct===100?'var(--accent3)':'var(--accent)'};border-radius:4px;transition:width .3s"></div>
       </div>
     </div>`;
 
-  // Nav pills de grupos
+  // Pills de grupos
   document.getElementById('captura-nav').innerHTML = grupos.map(g=>{
     const gms = ms.filter(m=>m.grupo===g);
-    const done = gms.every(m=>m.finalizado);
-    const partial = gms.some(m=>m.finalizado) && !done;
-    return `<button onclick="capturaGrupoActivo=${g};renderCapturaGrupo()"
-      style="padding:.3rem .75rem;border-radius:6px;border:1.5px solid ${
-        g===capturaGrupoActivo?'var(--accent)':done?'var(--accent3)':partial?'var(--warning, #f5a623)':'var(--border2)'
-      };background:${
-        g===capturaGrupoActivo?'var(--accent)':done?'rgba(0,229,158,.1)':partial?'rgba(245,166,35,.08)':'transparent'
-      };color:${
-        g===capturaGrupoActivo?'var(--black)':done?'var(--accent3)':partial?'#f5a623':'var(--muted2)'
-      };font-family:'Bebas Neue';font-size:1rem;letter-spacing:1px;cursor:pointer;transition:all .15s">
+    const done = gms.length>0 && gms.every(m=>m.finalizado && m.gA!==null);
+    const active = g === capturaGrupoActivo;
+    return `<button onclick="capturaGoTo(${g})"
+      style="padding:.28rem .65rem;border-radius:6px;cursor:pointer;transition:all .15s;
+        font-family:'Bebas Neue';font-size:.95rem;letter-spacing:1px;
+        border:1.5px solid ${active?'var(--accent)':done?'var(--accent3)':'var(--border2)'};
+        background:${active?'var(--accent)':done?'rgba(0,229,158,.08)':'transparent'};
+        color:${active?'var(--black)':done?'var(--accent3)':'var(--muted2)'}">
       G${g}${done?' ✓':''}
     </button>`;
   }).join('');
@@ -963,258 +987,272 @@ function renderCaptura(){
   renderCapturaGrupo();
 }
 
+function capturaGoTo(g){
+  capturaGrupoActivo = g;
+  renderCaptura();
+  // Scroll to top of captura
+  document.getElementById('captura-grupo').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
 function renderCapturaGrupo(){
   const jId = document.getElementById('rj')?.value;
-  const lid = document.getElementById('rl')?.value;
   const g = capturaGrupoActivo;
   if(!jId||!g){ document.getElementById('captura-grupo').innerHTML=''; return; }
 
   const gms = S.partidos.filter(m=>m.jornadaId===jId&&m.grupo===g).sort((a,b)=>a.set-b.set);
-  if(!gms.length){ document.getElementById('captura-grupo').innerHTML=''; return; }
+  if(!gms.length){ document.getElementById('captura-grupo').innerHTML='<p style="color:var(--muted2)">Sin partidos para este grupo</p>'; return; }
 
-  // Los 4 jugadores únicos del grupo
+  const jornada = S.jornadas.find(j=>j.id===jId);
   const pids = [gms[0].a1, gms[0].a2, gms[0].b1, gms[0].b2];
+  const cs = getCS(jId, g);
+  const grupos = [...new Set(S.partidos.filter(m=>m.jornadaId===jId).map(m=>m.grupo))].sort((a,b)=>a-b);
+  const gIdx = grupos.indexOf(g);
+  const prevG = grupos[gIdx-1]||null;
+  const nextG = grupos[gIdx+1]||null;
+  const done = gms.every(m=>m.finalizado && m.gA!==null);
 
-  // Calcular diferencial en tiempo real con los valores del form
-  function getDiff(pid){
+  // Calcular diferenciales desde el estado local
+  function localDiff(pid){
     let gf=0,gc=0;
     gms.forEach((m,si)=>{
-      const inpA = document.getElementById(`s${si+1}a`);
-      const inpB = document.getElementById(`s${si+1}b`);
-      const vA = inpA?parseInt(inpA.value)||0:m.finalizado?m.gA:0;
-      const vB = inpB?parseInt(inpB.value)||0:m.finalizado?m.gB:0;
+      const vA = cs.scores[si]?.[0] ?? 0;
+      const vB = cs.scores[si]?.[1] ?? 0;
       const enA = [m.a1,m.a2].includes(pid);
       gf += enA?vA:vB; gc += enA?vB:vA;
     });
     return gf-gc;
   }
 
-  const done = gms.every(m=>m.finalizado);
-  const jornada = S.jornadas.find(j=>j.id===jId);
-  const grupos = [...new Set(S.partidos.filter(p=>p.jornadaId===jId).map(m=>m.grupo))].sort((a,b)=>a-b);
-  const gIdx = grupos.indexOf(g);
-  const prevG = grupos[gIdx-1]||null;
-  const nextG = grupos[gIdx+1]||null;
-
   document.getElementById('captura-grupo').innerHTML = `
-    <div style="background:var(--card);border:2px solid ${done?'var(--accent3)':'var(--border)'};border-radius:14px;overflow:hidden;max-width:680px">
+    <div style="max-width:600px;margin:0 auto">
+    <div style="background:var(--card);border:2px solid ${done?'var(--accent3)':'var(--border)'};border-radius:14px;overflow:hidden">
 
-      <!-- Header grupo -->
-      <div style="background:var(--card2);border-bottom:1px solid var(--border);padding:.75rem 1.1rem;
-        display:flex;align-items:center;justify-content:space-between">
+      <!-- HEADER -->
+      <div style="background:var(--card2);border-bottom:1px solid var(--border);
+        padding:.7rem 1rem;display:flex;align-items:center;justify-content:space-between">
         <div>
-          <div style="font-family:'Bebas Neue';font-size:1.6rem;letter-spacing:3px;line-height:1">GRUPO ${g}</div>
-          <div style="font-size:.7rem;color:var(--muted2)">${gms[0].cancha} · ${gms[0].turno} · J${gms[0].jornada} · ${jornada?.fecha||''}</div>
+          <div style="font-family:'Bebas Neue';font-size:1.55rem;letter-spacing:3px;line-height:1">GRUPO ${g}</div>
+          <div style="font-size:.68rem;color:var(--muted2);margin-top:1px">
+            ${gms[0].cancha} · ${gms[0].turno} · J${gms[0].jornada}${jornada?.fecha?' · '+jornada.fecha:''}
+          </div>
         </div>
-        <div style="display:flex;gap:.5rem;align-items:center">
-          ${prevG?`<button class="btn bs bsm" onclick="capturaGrupoActivo=${prevG};renderCapturaGrupo()">← G${prevG}</button>`:''}
-          ${nextG?`<button class="btn bp bsm" onclick="capturaGrupoActivo=${nextG};renderCapturaGrupo()">G${nextG} →</button>`:''}
+        <div style="display:flex;gap:.4rem">
+          ${prevG?`<button class="btn bs bsm" onclick="capturaGoTo(${prevG})">← G${prevG}</button>`:''}
+          ${nextG?`<button class="btn bp bsm" onclick="capturaGoTo(${nextG})">G${nextG} →</button>`:''}
         </div>
       </div>
 
-      <!-- Suplentes -->
-      <div style="padding:.65rem 1.1rem;border-bottom:1px solid var(--border);display:flex;gap:1rem;flex-wrap:wrap">
-        <span style="font-size:.65rem;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;align-self:center">SUPLENTES / AUSENTES:</span>
-        ${pids.map(pid=>`
-          <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-size:.8rem">
-            <input type="checkbox" id="aus-${pid}" ${pById(pid)?.ausente_j?'checked':''}
-              onchange="toggleAusenteLocal('${pid}','${jId}');renderCapturaGrupo()">
-            ${pFN(pid).split(' ')[0]}
-          </label>`).join('')}
-        <span style="font-size:.7rem;color:var(--muted2);align-self:center">( suplente = −6 pts forzado )</span>
-      </div>
+      <div style="padding:.85rem 1rem">
 
-      <!-- 3 SETS -->
-      <div style="padding:.9rem 1.1rem">
+        <!-- SUPLENTES -->
+        <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;
+          padding:.55rem .8rem;margin-bottom:.9rem">
+          <div style="font-size:.6rem;font-weight:700;letter-spacing:2px;color:var(--muted);
+            text-transform:uppercase;margin-bottom:.45rem">Suplentes / Ausentes (−6 pts cada uno)</div>
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+            ${pids.map(pid=>{
+              const isAus = cs.ausentes.has(pid);
+              return `<label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;
+                padding:.3rem .6rem;border-radius:6px;border:1px solid ${isAus?'var(--accent2)':'var(--border2)'};
+                background:${isAus?'rgba(255,59,92,.1)':'transparent'};transition:all .15s;user-select:none">
+                <input type="checkbox" id="aus-${pid}" ${isAus?'checked':''}
+                  onchange="toggleAusente('${jId}',${g},'${pid}')">
+                <span style="font-size:.82rem;font-weight:${isAus?'700':'400'};color:${isAus?'var(--accent2)':'var(--text)'}">${pFN(pid).split(' ')[0]}</span>
+                ${isAus?'<span style="font-size:.65rem;color:var(--accent2)">−6</span>':''}
+              </label>`;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- 3 SETS -->
         ${gms.map((m,si)=>{
-          const wA = m.finalizado&&m.gA>m.gB, wB = m.finalizado&&m.gB>m.gA;
+          const vA = cs.scores[si]?.[0];
+          const vB = cs.scores[si]?.[1];
+          const wA = vA!==null && vB!==null && vA>vB;
+          const wB = vA!==null && vB!==null && vB>vA;
           return `
-          <div style="margin-bottom:.85rem">
-            <div style="font-size:.63rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.4rem">SET ${m.set}</div>
-            <div style="display:grid;grid-template-columns:1fr auto auto auto 1fr;gap:.5rem;align-items:center;
-              background:var(--card2);border-radius:9px;border:1px solid var(--border);padding:.65rem .85rem">
-              <!-- Pareja A -->
+          <div style="margin-bottom:.7rem">
+            <div style="font-size:.6rem;font-weight:700;letter-spacing:2px;color:var(--muted);
+              text-transform:uppercase;margin-bottom:.35rem">SET ${m.set}</div>
+            <div style="display:grid;grid-template-columns:1fr 70px 24px 70px 1fr;gap:.4rem;
+              align-items:center;background:var(--card2);border-radius:9px;
+              border:1px solid var(--border);padding:.6rem .75rem">
               <div>
-                <div style="font-weight:700;font-size:.88rem">${pFN(m.a1).split(' ')[0]}</div>
-                <div style="font-size:.75rem;color:var(--muted2)">${pFN(m.a2).split(' ')[0]}</div>
+                <div style="font-weight:700;font-size:.86rem;line-height:1.2">${pFN(m.a1).split(' ')[0]}</div>
+                <div style="font-size:.72rem;color:var(--muted2)">${pFN(m.a2).split(' ')[0]}</div>
               </div>
-              <!-- Score A -->
-              <input type="number" id="s${si+1}a" min="0" max="99"
-                value="${m.finalizado?m.gA:''}"
-                placeholder="0"
-                style="width:62px;text-align:center;font-family:'Bebas Neue';font-size:2.1rem;
-                  border-radius:8px;border:2px solid ${wA?'var(--accent)':'var(--border2)'};
-                  background:${wA?'rgba(212,240,0,.08)':'var(--card)'};color:var(--text);
-                  padding:.2rem"
-                oninput="updateDiff('${jId}',${g})">
-              <!-- VS -->
-              <div style="font-family:'Bebas Neue';font-size:.95rem;color:var(--muted);padding:0 .2rem">—</div>
-              <!-- Score B -->
-              <input type="number" id="s${si+1}b" min="0" max="99"
-                value="${m.finalizado?m.gB:''}"
-                placeholder="0"
-                style="width:62px;text-align:center;font-family:'Bebas Neue';font-size:2.1rem;
-                  border-radius:8px;border:2px solid ${wB?'var(--accent)':'var(--border2)'};
-                  background:${wB?'rgba(212,240,0,.08)':'var(--card)'};color:var(--text);
-                  padding:.2rem"
-                oninput="updateDiff('${jId}',${g})">
-              <!-- Pareja B -->
+              <input type="number" min="0" max="99"
+                value="${vA!==null?vA:''}" placeholder="—"
+                style="width:70px;text-align:center;font-family:'Bebas Neue';font-size:2rem;
+                  border-radius:8px;padding:.2rem .1rem;
+                  border:2px solid ${wA?'var(--accent)':'var(--border2)'};
+                  background:${wA?'rgba(212,240,0,.08)':'var(--card)'};color:var(--text);outline:none"
+                oninput="updateScore('${jId}',${g},${si},0,this.value)">
+              <div style="text-align:center;font-size:.8rem;color:var(--muted)">—</div>
+              <input type="number" min="0" max="99"
+                value="${vB!==null?vB:''}" placeholder="—"
+                style="width:70px;text-align:center;font-family:'Bebas Neue';font-size:2rem;
+                  border-radius:8px;padding:.2rem .1rem;
+                  border:2px solid ${wB?'var(--accent)':'var(--border2)'};
+                  background:${wB?'rgba(212,240,0,.08)':'var(--card)'};color:var(--text);outline:none"
+                oninput="updateScore('${jId}',${g},${si},1,this.value)">
               <div style="text-align:right">
-                <div style="font-weight:700;font-size:.88rem">${pFN(m.b1).split(' ')[0]}</div>
-                <div style="font-size:.75rem;color:var(--muted2)">${pFN(m.b2).split(' ')[0]}</div>
+                <div style="font-weight:700;font-size:.86rem;line-height:1.2">${pFN(m.b1).split(' ')[0]}</div>
+                <div style="font-size:.72rem;color:var(--muted2)">${pFN(m.b2).split(' ')[0]}</div>
               </div>
             </div>
           </div>`;
         }).join('')}
 
         <!-- TOTAL DIFERENCIAL -->
-        <div style="border-top:2px solid var(--border);padding-top:.85rem;margin-top:.25rem">
-          <div style="font-size:.63rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.55rem">TOTAL · DIFERENCIAL DE GAMES</div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-bottom:1rem" id="diff-${g}">
+        <div style="border-top:2px solid var(--border);padding-top:.8rem;margin-top:.3rem">
+          <div style="font-size:.6rem;font-weight:700;letter-spacing:2px;color:var(--muted);
+            text-transform:uppercase;margin-bottom:.5rem">TOTAL · DIFERENCIAL</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem;margin-bottom:.85rem"
+            id="diff-block-${g}">
             ${pids.map(pid=>{
-              const d = getDiff(pid);
-              const ausente = document.getElementById('aus-'+pid)?.checked;
-              const pts = ausente ? -6 : d;
+              const aus = cs.ausentes.has(pid);
+              const d = aus ? -6 : localDiff(pid);
               return `<div style="text-align:center;background:var(--card2);border-radius:8px;
-                border:1px solid ${pts>0?'rgba(212,240,0,.2)':pts<0?'rgba(255,59,92,.2)':'var(--border)'};
-                padding:.6rem .4rem">
-                <div style="font-size:.72rem;font-weight:600;margin-bottom:.25rem;
-                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${pFN(pid).split(' ')[0]}</div>
-                <div style="font-family:'Bebas Neue';font-size:1.8rem;
-                  color:${ausente?'var(--muted2)':pts>0?'var(--accent)':pts<0?'var(--accent2)':'var(--muted2)'}">
-                  ${ausente?'−6':pts>0?'+'+pts:pts}</div>
-                ${ausente?'<div style="font-size:.62rem;color:var(--muted2)">suplente</div>':''}
+                border:1px solid ${d>0?'rgba(212,240,0,.2)':d<0?'rgba(255,59,92,.2)':'var(--border)'};
+                padding:.55rem .3rem">
+                <div style="font-size:.7rem;font-weight:600;margin-bottom:.2rem;
+                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px">
+                  ${pFN(pid).split(' ')[0]}</div>
+                <div style="font-family:'Bebas Neue';font-size:1.7rem;line-height:1;
+                  color:${aus?'var(--muted2)':d>0?'var(--accent)':d<0?'var(--accent2)':'var(--muted2)'}">
+                  ${aus?'−6':d>0?'+'+d:d}</div>
+                ${aus?'<div style="font-size:.6rem;color:var(--accent2);margin-top:1px">suplente</div>':''}
               </div>`;
             }).join('')}
           </div>
-          <!-- Botón guardar -->
-          <button class="btn bp" style="width:100%;font-size:.95rem;padding:.7rem"
+          <button class="btn bp" style="width:100%;font-size:.9rem;padding:.65rem"
             onclick="saveGrupoCaptura('${jId}',${g})">
-            ${done?'✏️ Actualizar Resultados Grupo '+g:'💾 Guardar Grupo '+g}
+            ${done?'✏️ Actualizar':'💾 Guardar'} Grupo ${g}
           </button>
         </div>
+
       </div>
+    </div>
     </div>`;
 }
 
-function updateDiff(jId, g){
-  // Re-render solo el bloque de totales sin re-renderizar todo
-  const jornada = S.jornadas.find(j=>j.id===jId);
+// Toggle ausente SIN re-renderizar todo el form
+function toggleAusente(jId, g, pid){
+  const cs = getCS(jId, g);
+  const chk = document.getElementById('aus-'+pid);
+  if(!chk) return;
+  if(chk.checked) cs.ausentes.add(pid);
+  else cs.ausentes.delete(pid);
+  // Solo actualizar el label y el bloque de diferenciales
+  const label = chk.closest('label');
+  if(label){
+    const isAus = cs.ausentes.has(pid);
+    label.style.borderColor = isAus?'var(--accent2)':'var(--border2)';
+    label.style.background = isAus?'rgba(255,59,92,.1)':'transparent';
+    const nameSpan = label.querySelector('span');
+    if(nameSpan){ nameSpan.style.fontWeight = isAus?'700':'400'; nameSpan.style.color = isAus?'var(--accent2)':'var(--text)'; }
+    // Add/remove -6 badge
+    let badge = label.querySelector('.aus-badge');
+    if(isAus && !badge){
+      badge = document.createElement('span');
+      badge.className='aus-badge';
+      badge.style.cssText='font-size:.65rem;color:var(--accent2)';
+      badge.textContent='−6';
+      label.appendChild(badge);
+    } else if(!isAus && badge){ badge.remove(); }
+  }
+  refreshDiffBlock(jId, g);
+}
+
+// Update score en estado local sin re-render
+function updateScore(jId, g, setIdx, side, val){
+  const cs = getCS(jId, g);
+  if(!cs.scores[setIdx]) cs.scores[setIdx] = [null, null];
+  cs.scores[setIdx][side] = val===''?null:parseInt(val)||0;
+  // Highlight inputs del set
+  const gms = S.partidos.filter(m=>m.jornadaId===jId&&m.grupo===g).sort((a,b)=>a.set-b.set);
+  const inputs = document.querySelectorAll(`#captura-grupo input[type=number]`);
+  const setInputs = [...inputs].slice(setIdx*2, setIdx*2+2);
+  if(setInputs.length===2){
+    const vA = cs.scores[setIdx][0], vB = cs.scores[setIdx][1];
+    const wA = vA!==null&&vB!==null&&vA>vB, wB = vA!==null&&vB!==null&&vB>vA;
+    setInputs[0].style.borderColor = wA?'var(--accent)':'var(--border2)';
+    setInputs[1].style.borderColor = wB?'var(--accent)':'var(--border2)';
+    setInputs[0].style.background = wA?'rgba(212,240,0,.08)':'var(--card)';
+    setInputs[1].style.background = wB?'rgba(212,240,0,.08)':'var(--card)';
+  }
+  refreshDiffBlock(jId, g);
+}
+
+function refreshDiffBlock(jId, g){
+  const el = document.getElementById('diff-block-'+g);
+  if(!el) return;
+  const cs = getCS(jId, g);
   const gms = S.partidos.filter(m=>m.jornadaId===jId&&m.grupo===g).sort((a,b)=>a.set-b.set);
   if(!gms.length) return;
   const pids = [gms[0].a1, gms[0].a2, gms[0].b1, gms[0].b2];
-  // Highlight ganador en cada set
-  gms.forEach((m,si)=>{
-    const inpA = document.getElementById(`s${si+1}a`);
-    const inpB = document.getElementById(`s${si+1}b`);
-    if(!inpA||!inpB) return;
-    const vA = parseInt(inpA.value)||0, vB = parseInt(inpB.value)||0;
-    inpA.style.borderColor = vA>vB?'var(--accent)':'var(--border2)';
-    inpB.style.borderColor = vB>vA?'var(--accent)':'var(--border2)';
-    inpA.style.background = vA>vB?'rgba(212,240,0,.08)':'var(--card)';
-    inpB.style.background = vB>vA?'rgba(212,240,0,.08)':'var(--card)';
-  });
-  // Recalcular diferenciales
-  const diffEl = document.getElementById('diff-'+g);
-  if(!diffEl) return;
-  const newDiffs = pids.map(pid=>{
+  el.innerHTML = pids.map(pid=>{
+    const aus = cs.ausentes.has(pid);
     let gf=0,gc=0;
     gms.forEach((m,si)=>{
-      const vA=parseInt(document.getElementById(`s${si+1}a`)?.value)||0;
-      const vB=parseInt(document.getElementById(`s${si+1}b`)?.value)||0;
+      const vA = cs.scores[si]?.[0]??0, vB = cs.scores[si]?.[1]??0;
       const enA=[m.a1,m.a2].includes(pid);
       gf+=enA?vA:vB; gc+=enA?vB:vA;
     });
-    return {pid, d:gf-gc};
-  });
-  diffEl.innerHTML = newDiffs.map(({pid,d})=>{
-    const ausente = document.getElementById('aus-'+pid)?.checked;
-    const pts = ausente?-6:d;
+    const d = aus ? -6 : (gf-gc);
     return `<div style="text-align:center;background:var(--card2);border-radius:8px;
-      border:1px solid ${pts>0?'rgba(212,240,0,.2)':pts<0?'rgba(255,59,92,.2)':'var(--border)'};
-      padding:.6rem .4rem">
-      <div style="font-size:.72rem;font-weight:600;margin-bottom:.25rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${pFN(pid).split(' ')[0]}</div>
-      <div style="font-family:'Bebas Neue';font-size:1.8rem;color:${ausente?'var(--muted2)':pts>0?'var(--accent)':pts<0?'var(--accent2)':'var(--muted2)'}">
-        ${ausente?'−6':pts>0?'+'+pts:pts}</div>
-      ${ausente?'<div style="font-size:.62rem;color:var(--muted2)">suplente</div>':''}
+      border:1px solid ${d>0?'rgba(212,240,0,.2)':d<0?'rgba(255,59,92,.2)':'var(--border)'};
+      padding:.55rem .3rem;transition:all .2s">
+      <div style="font-size:.7rem;font-weight:600;margin-bottom:.2rem;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px">
+        ${pFN(pid).split(' ')[0]}</div>
+      <div style="font-family:'Bebas Neue';font-size:1.7rem;line-height:1;
+        color:${aus?'var(--muted2)':d>0?'var(--accent)':d<0?'var(--accent2)':'var(--muted2)'}">
+        ${aus?'−6':d>0?'+'+d:d}</div>
+      ${aus?'<div style="font-size:.6rem;color:var(--accent2);margin-top:1px">suplente</div>':''}
     </div>`;
   }).join('');
 }
 
-function toggleAusenteLocal(pid, jId){}
-
 function saveGrupoCaptura(jId, g){
+  const cs = getCS(jId, g);
   const gms = S.partidos.filter(m=>m.jornadaId===jId&&m.grupo===g).sort((a,b)=>a.set-b.set);
   if(!gms.length) return;
-  const pids = [gms[0].a1, gms[0].a2, gms[0].b1, gms[0].b2];
-  // Leer ausentes
-  const ausentes = pids.filter(pid=>document.getElementById('aus-'+pid)?.checked);
-  // Leer scores
-  let allFilled = true;
+  // Validar que todos los sets tengan score
+  for(let si=0; si<gms.length; si++){
+    const vA = cs.scores[si]?.[0], vB = cs.scores[si]?.[1];
+    if(vA===null||vA===undefined||vB===null||vB===undefined){
+      toast(`⚠️ Falta el score del Set ${si+1}`, 1); return;
+    }
+  }
+  // Guardar en S.partidos
   gms.forEach((m,si)=>{
-    const vA = parseInt(document.getElementById(`s${si+1}a`)?.value);
-    const vB = parseInt(document.getElementById(`s${si+1}b`)?.value);
-    if(isNaN(vA)||isNaN(vB)){ allFilled=false; return; }
-    m.gA = vA; m.gB = vB; m.finalizado = true;
-    // Marcar ausente si algún jugador del set es suplente
-    m.ausente = ausentes.some(pid=>[m.a1,m.a2,m.b1,m.b2].includes(pid));
+    m.gA = cs.scores[si][0];
+    m.gB = cs.scores[si][1];
+    m.finalizado = true;
+    m.ausente = false;
   });
-  if(!allFilled){ toast('⚠️ Faltan scores en algún set',1); return; }
-  // Marcar jugadores como ausentes en sus datos (para diferencial)
-  S.players.forEach(p=>{
-    if(ausentes.includes(p.id)) p['ausente_j_'+jId]=true;
+  // Marcar ausentes en jugadores
+  const pids = [gms[0].a1, gms[0].a2, gms[0].b1, gms[0].b2];
+  pids.forEach(pid=>{
+    const p = pById(pid);
+    if(!p) return;
+    if(cs.ausentes.has(pid)) p['ausente_j_'+jId] = true;
     else delete p['ausente_j_'+jId];
   });
   save();
-  // Siguiente grupo automático
-  const lid = document.getElementById('rl')?.value;
-  const grupos = [...new Set(S.partidos.filter(m=>m.jornadaId===jId).map(m=>m.grupo))].sort((a,b)=>a-b);
-  const gIdx = grupos.indexOf(g);
-  const nextG = grupos[gIdx+1]||null;
   toast(`✓ Grupo ${g} guardado`);
-  if(nextG){ capturaGrupoActivo=nextG; }
+  // Siguiente grupo pendiente
+  const grupos = [...new Set(S.partidos.filter(m=>m.jornadaId===jId).map(m=>m.grupo))].sort((a,b)=>a-b);
+  const next = grupos.find(gr => gr > g && !S.partidos.filter(m=>m.jornadaId===jId&&m.grupo===gr).every(m=>m.finalizado&&m.gA!==null));
+  if(next){ capturaGrupoActivo = next; }
   renderCaptura();
 }
 
-// Compatibilidad: renderPending llama a renderCaptura
 function renderPending(){ renderCaptura(); }
 function openResM(mid){ if(!S.isAdmin)return; }
 function saveResM(mid){}
-
-// ═══════════════════ PROMOCIONES ═══════════════════
-function renderPromoP(){
-  populateSels();
-  const lid=document.getElementById('prl')?.value;
-  const jSel=document.getElementById('prj');
-  if(lid&&jSel){
-    const js=S.jornadas.filter(j=>j.liga===lid).sort((a,b)=>b.num-a.num);
-    const cur=jSel.value;
-    jSel.innerHTML='<option value="">— selecciona —</option>'+js.map(j=>`<option value="${j.id}"${j.id===cur?' selected':''}>Jornada ${j.num} · ${j.fecha}</option>`).join('');
-  }
-  const lid2=document.getElementById('prl')?.value;
-  const jId=document.getElementById('prj')?.value;
-  const n=parseInt(document.getElementById('prn')?.value)||1;
-  const el=document.getElementById('promo-prev');
-  if(!lid2||!jId){el.innerHTML='';return;}
-  const ps=S.players.filter(p=>p.liga===lid2);
-  const grupos=[...new Set(ps.map(p=>p.grupo))].sort((a,b)=>a-b);
-  el.innerHTML=`<div class="cl" style="margin-bottom:.65rem">PREVISUALIZACIÓN — ${n===1?'1 sube · 1 baja':'2 suben · 2 bajan'}</div>
-    <div class="gauto">
-    ${grupos.map(g=>{
-      const st=calcGroupPos(lid2,g,jId);
-      return`<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.75rem">
-        <div style="font-family:'Bebas Neue';font-size:1rem;letter-spacing:1px;margin-bottom:.45rem">GRUPO ${g}</div>
-        ${st.map((s,i)=>{
-          const isWin=i<n&&g>1,isLose=i>=st.length-n&&g<grupos.length;
-          return`<div style="display:flex;align-items:center;gap:.4rem;padding:.18rem 0;font-size:.76rem">
-            <span style="font-family:'Bebas Neue';color:${isWin?'var(--accent3)':isLose?'var(--accent2)':'var(--muted)'};min-width:16px">${i+1}</span>
-            <span style="flex:1">${s.player.nombre}</span>
-            <span style="color:${s.pts>=0?'var(--accent)':'var(--accent2)'};font-weight:600">${s.pts>0?'+':''}${s.pts}</span>
-            ${isWin?`<span class="bdg b-up">↑G${g-1}</span>`:isLose?`<span class="bdg b-dn">↓G${g+1}</span>`:'<span class="bdg b-eq">—</span>'}
-          </div>`;}).join('')}
-      </div>`;}).join('')}
-    </div>`;
-}
 function applyPromo(){
   const lid=document.getElementById('prl')?.value;
   const jId=document.getElementById('prj')?.value;
