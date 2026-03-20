@@ -1631,26 +1631,21 @@ function printHorarios(){
   const ps=S.players.filter(p=>p.liga===lid);
   const gruposData=grupos.map(g=>{
     const gms=S.partidos.filter(m=>m.jornadaId===jId&&m.grupo===g);if(!gms.length)return null;
-    return{g,cancha:gms[0].cancha,turno:gms[0].turno,
+    return{g,cancha:g, turno:gms[0].turno,
       players:ps.filter(p=>p.grupo===g).sort((a,b)=>a.orden-b.orden)};
   }).filter(Boolean);
 
-  // Split into 2 columns for the page
-  const half = Math.ceil(gruposData.length/2);
-  const col1 = gruposData.slice(0, half);
-  const col2 = gruposData.slice(half);
-
-  function renderCol(grupos){
-    return grupos.map(({g,cancha,turno,players})=>`
-      <div class="grupo-block">
-        ${players.slice(0,4).map((p,i)=>`
-          <div class="prow ${i===0?'first':''}">
-            <span class="pname">${p.nombre}</span>
-            ${i===0?`<span class="cancha-col">${cancha}</span><span class="hora-col">${turno}</span>`:'<span class="cancha-col"></span><span class="hora-col"></span>'}
-          </div>`).join('')}
-        <div class="grupo-spacer"></div>
-      </div>`).join('');
-  }
+  let rows='';
+  gruposData.forEach(({g,cancha,turno,players})=>{
+    players.slice(0,4).forEach((p,i)=>{
+      rows+=`<tr class="${i===0?'first-row':''}">
+        <td class="pname">${p.nombre}</td>
+        <td class="cancha">${i===0?cancha:''}</td>
+        <td class="hora">${i===0?turno:''}</td>
+      </tr>`;
+    });
+    rows+=`<tr class="spacer"><td colspan="3"></td></tr>`;
+  });
 
   let html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
     @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;800&display=swap');
@@ -1660,47 +1655,35 @@ function printHorarios(){
 
     .page{width:210mm;min-height:297mm;padding:0;position:relative;}
 
-    /* Header negro */
-    .hdr{background:#0a0a0a;padding:5mm 12mm 4mm;display:flex;align-items:flex-end;justify-content:space-between;}
+    .hdr{background:#0a0a0a;padding:5mm 15mm 4.5mm;display:flex;align-items:flex-end;justify-content:space-between;}
     .hdr-logo{font-family:'Bebas Neue',sans-serif;font-size:24pt;letter-spacing:5px;color:#b8d400;line-height:1;}
     .hdr-logo span{color:#fff;}
-    .hdr-sub{font-size:7.5pt;color:#666;margin-top:1mm;letter-spacing:.5px;}
+    .hdr-sub{font-size:7pt;color:#555;margin-top:1.5mm;letter-spacing:.5px;}
     .hdr-right{text-align:right;}
-    .hdr-liga{font-size:8pt;color:#888;letter-spacing:.5px;text-transform:uppercase;}
-    .hdr-jornada{font-family:'Bebas Neue',sans-serif;font-size:28pt;letter-spacing:3px;color:#fff;line-height:1;}
-    .hdr-fecha{font-size:8.5pt;color:#b8d400;margin-top:.5mm;}
+    .hdr-liga{font-size:8pt;color:#777;letter-spacing:.5px;text-transform:uppercase;margin-bottom:.5mm;}
+    .hdr-jornada{font-family:'Bebas Neue',sans-serif;font-size:30pt;letter-spacing:3px;color:#fff;line-height:1;}
+    .hdr-fecha{font-size:8.5pt;color:#b8d400;margin-top:.5mm;letter-spacing:.3px;}
 
-    /* Stripe verde */
     .stripe{height:3mm;background:#b8d400;}
 
-    /* Encabezado de columnas */
-    .col-headers{display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:2px solid #0a0a0a;margin:3mm 12mm 0;}
-    .ch{display:flex;padding:1.5mm 0 1mm;}
-    .ch-name{flex:1;font-size:7pt;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#666;}
-    .ch-cancha{width:14mm;font-size:7pt;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#666;text-align:center;}
-    .ch-hora{width:22mm;font-size:7pt;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#666;text-align:right;}
-    .ch-sep{width:6mm;}
+    .content{padding:5mm 15mm;}
 
-    /* Contenido en 2 columnas */
-    .body{display:grid;grid-template-columns:1fr 6mm 1fr;margin:0 12mm;padding-top:1mm;}
-    .col-sep{border-left:1px solid #e0e0e0;margin:0 0;}
+    /* Cabecera de tabla */
+    .col-head{display:flex;border-bottom:2px solid #0a0a0a;padding-bottom:1.5mm;margin-bottom:1mm;}
+    .ch-nombre{flex:1;font-size:7pt;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#666;}
+    .ch-cancha{width:22mm;text-align:center;font-size:7pt;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#666;}
+    .ch-hora{width:28mm;text-align:right;font-size:7pt;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#666;}
 
-    /* Grupo */
-    .grupo-block{margin-bottom:0;}
-    .grupo-spacer{height:3mm;border-bottom:1px solid #ececec;margin-bottom:1mm;}
+    table{width:100%;border-collapse:collapse;}
+    td{font-size:9.5pt;vertical-align:middle;padding:.5mm 0;}
+    td.pname{padding-right:4mm;}
+    td.cancha{width:22mm;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:13pt;color:#0a0a0a;}
+    td.hora{width:28mm;text-align:right;font-size:9pt;font-weight:600;color:#0a0a0a;}
+    tr.first-row td.pname{font-weight:700;font-size:9.5pt;}
+    tr.spacer td{height:3mm;border-bottom:1px solid #ebebeb;}
 
-    /* Fila jugador */
-    .prow{display:flex;align-items:center;padding:.7mm 0;border-bottom:.3px solid #f5f5f5;}
-    .prow.first .pname{font-weight:700;font-size:9pt;}
-    .pname{flex:1;font-size:9pt;font-weight:400;padding-right:2mm;}
-    .cancha-col{width:14mm;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:11pt;color:#0a0a0a;}
-    .hora-col{width:22mm;text-align:right;font-size:8pt;font-weight:600;color:#0a0a0a;}
-    .prow:not(.first) .cancha-col,.prow:not(.first) .hora-col{visibility:hidden;}
-
-    /* Footer */
-    .foot{position:absolute;bottom:5mm;left:0;right:0;text-align:center;
-      font-size:7pt;color:#bbb;letter-spacing:.3px;}
-
+    .foot{position:absolute;bottom:5mm;left:0;right:0;
+      text-align:center;font-size:7pt;color:#bbb;letter-spacing:.3px;}
   </style></head><body>
   <div class="page">
     <div class="hdr">
@@ -1711,31 +1694,18 @@ function printHorarios(){
       <div class="hdr-right">
         <div class="hdr-liga">${liga.nombre}</div>
         <div class="hdr-jornada">JORNADA ${jornada.num}</div>
-        <div class="hdr-fecha">${jornada.fecha} &nbsp;·&nbsp; ${jornada.turnos.join(' · ')}</div>
+        <div class="hdr-fecha">${jornada.fecha}&nbsp;&nbsp;·&nbsp;&nbsp;${jornada.turnos.join(' · ')}</div>
       </div>
     </div>
     <div class="stripe"></div>
-
-    <div class="col-headers">
-      <div class="ch">
-        <span class="ch-name">NOMBRE</span>
+    <div class="content">
+      <div class="col-head">
+        <span class="ch-nombre">NOMBRE</span>
         <span class="ch-cancha">CANCHA</span>
         <span class="ch-hora">HORARIO</span>
       </div>
-      <div class="ch-sep"></div>
-      <div class="ch">
-        <span class="ch-name">NOMBRE</span>
-        <span class="ch-cancha">CANCHA</span>
-        <span class="ch-hora">HORARIO</span>
-      </div>
+      <table><tbody>${rows}</tbody></table>
     </div>
-
-    <div class="body">
-      <div>${renderCol(col1)}</div>
-      <div class="col-sep"></div>
-      <div>${renderCol(col2)}</div>
-    </div>
-
     <div class="foot">Urban Padel Life &nbsp;·&nbsp; <b style="color:#888">${liga.nombre}</b> &nbsp;·&nbsp; Jornada ${jornada.num} &nbsp;·&nbsp; ${jornada.fecha}</div>
   </div></body></html>`;
   openPrint(html);
