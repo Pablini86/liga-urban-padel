@@ -307,7 +307,7 @@ select option{background:var(--dark);}
 
 <script>
 // ═══ CONFIG ═══
-const ADMIN_EMAIL = 'pablolc20111@gmail.com';
+const ADMIN_EMAILS = ['pablolc20111@gmail.com','contacto@urbanpadellife.com'];
 const FB_CONFIG = {
   apiKey:"AIzaSyChTCdBwFtsf7rTI4sKvTAGhb83VxdmIDs",
   authDomain:"liga-urban-padel.firebaseapp.com",
@@ -333,7 +333,7 @@ function doLogin(){
   btn.textContent='Entrando...';
   auth.signInWithEmailAndPassword(email, pass)
     .then(r=>{
-      if(r.user.email !== ADMIN_EMAIL){
+      if(!ADMIN_EMAILS.includes(r.user.email)){
         auth.signOut();
         err.style.display='block';
         err.textContent='No tienes acceso de administrador.';
@@ -361,7 +361,7 @@ function showApp(email){
 
 // Auto-login if session active
 auth.onAuthStateChanged(u=>{
-  if(u && u.email===ADMIN_EMAIL) showApp(u.email);
+  if(u && ADMIN_EMAILS.includes(u.email)) showApp(u.email);
 });
 
 document.getElementById('logout-btn').onclick=()=>{
