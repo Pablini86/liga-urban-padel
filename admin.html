@@ -409,7 +409,7 @@ let dsrc = null;
 // Handle redirect result on page load
 const auth = firebase.auth();
 
-function checkAdminPass(){
+window.checkAdminPass = function(){
   const email = document.getElementById('admin-email-input').value.trim();
   const pass = document.getElementById('admin-pass-input').value;
   const errEl = document.getElementById('login-error');
