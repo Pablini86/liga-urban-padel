@@ -169,6 +169,38 @@ select option{background:var(--dark);}
 <body>
 
 <!-- LOGIN -->
+<script>
+// Early definition so HTML onclick works before Firebase loads
+function checkAdminPass(){
+  const email = document.getElementById('admin-email-input').value.trim();
+  const pass = document.getElementById('admin-pass-input').value;
+  const errEl = document.getElementById('login-error');
+  const btn = document.querySelector('.google-btn');
+  if(!window._fbAuth){
+    errEl.style.display='block';
+    errEl.textContent='Cargando... intenta de nuevo en 2 segundos.';
+    return;
+  }
+  btn.textContent='Entrando...';
+  btn.disabled=true;
+  window._fbAuth.signInWithEmailAndPassword(email, pass)
+    .then(result=>{
+      errEl.style.display='none';
+      document.getElementById('login-screen').style.display='none';
+      document.getElementById('app-screen').style.display='block';
+      document.getElementById('user-email').textContent=result.user.email;
+      window._initFS && window._initFS();
+    })
+    .catch(()=>{
+      errEl.style.display='block';
+      errEl.textContent='Correo o contraseña incorrectos.';
+      document.getElementById('admin-pass-input').value='';
+      document.getElementById('admin-pass-input').focus();
+      btn.innerHTML='<span style="font-size:1.1rem">🔐</span> Entrar';
+      btn.disabled=false;
+    });
+}
+</script>
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">URBAN <span>PADEL</span></div>
@@ -187,13 +219,22 @@ select option{background:var(--dark);}
         style="width:100%;padding:.75rem 1rem;border-radius:8px;border:1px solid var(--border2);
         background:var(--card2);color:var(--text);font-family:'Outfit',sans-serif;font-size:.95rem;
         outline:none"
-        onkeydown="if(event.key==='Enter')checkAdminPass()">
+        onkeydown="if(event.key==='Enter')(window.checkAdminPass||function(){})()">
     </div>
-    <button class="google-btn" onclick="checkAdminPass()" style="border-color:var(--accent)">
+    <button class="google-btn" id="login-btn" style="border-color:var(--accent)">
       <span style="font-size:1.1rem">🔐</span>
       Entrar
     </button>
     <div class="login-error" id="login-error" style="display:none">Correo o contraseña incorrectos.</div>
+<script>
+document.getElementById("login-btn").addEventListener("click", function(){
+  if(window.checkAdminPass) window.checkAdminPass();
+  else {
+    document.getElementById("login-error").style.display="block";
+    document.getElementById("login-error").textContent="Cargando Firebase... espera 2 segundos e intenta de nuevo.";
+  }
+});
+</script>
   </div>
 </div>
 
@@ -409,38 +450,9 @@ let dsrc = null;
 // Handle redirect result on page load
 const auth = firebase.auth();
 
-window.checkAdminPass = function(){
-  const email = document.getElementById('admin-email-input').value.trim();
-  const pass = document.getElementById('admin-pass-input').value;
-  const errEl = document.getElementById('login-error');
-  const btn = document.querySelector('.google-btn');
-  btn.textContent = 'Entrando...';
-  btn.disabled = true;
-  auth.signInWithEmailAndPassword(email, pass)
-    .then(result => {
-      if(result.user.email !== ADMIN_EMAIL){
-        auth.signOut();
-        errEl.style.display='block';
-        errEl.textContent='No tienes acceso de administrador.';
-        btn.innerHTML='<span style="font-size:1.1rem">🔐</span> Entrar';
-        btn.disabled=false;
-        return;
-      }
-      errEl.style.display='none';
-      document.getElementById('login-screen').style.display='none';
-      document.getElementById('app-screen').style.display='block';
-      document.getElementById('user-email').textContent=result.user.email;
-      initFirestoreListeners();
-    })
-    .catch(e => {
-      errEl.style.display='block';
-      errEl.textContent='Correo o contraseña incorrectos.';
-      document.getElementById('admin-pass-input').value='';
-      document.getElementById('admin-pass-input').focus();
-      btn.innerHTML='<span style="font-size:1.1rem">🔐</span> Entrar';
-      btn.disabled=false;
-    });
-}
+// Expose auth to early script
+window._fbAuth = auth;
+window._initFS = initFirestoreListeners;
 
 // Auto-login if already authenticated
 auth.onAuthStateChanged(user => {
@@ -453,7 +465,7 @@ auth.onAuthStateChanged(user => {
 });
 
 document.getElementById('logout-btn').onclick = () => {
-  auth.signOut().then(() => {
+  window._fbAuth.signOut().then(() => {
     document.getElementById('app-screen').style.display='none';
     document.getElementById('login-screen').style.display='flex';
     document.getElementById('admin-pass-input').value='';
