@@ -300,6 +300,9 @@ select option{background:var(--dark);}
     <div class="brow"><button class="btn bp" onclick="createLiga()">Crear</button><button class="btn bs" onclick="closeM('m-liga')">Cancelar</button></div>
   </div>
 </div>
+<div class="mo" id="m-edit-group">
+  <div class="modal" style="max-width:520px" id="m-edit-group-content"></div>
+</div>
 <div id="toast"></div>
 
 <script>
@@ -443,7 +446,7 @@ async function fsBatch(ops){const b=db.batch();ops.forEach(({op,col,id,data})=>{
 function renderAdmin(){renderLigasAdmin();renderPlist();renderDrag();populateSels();renderCaptura();renderPromoP();renderImpPrev();renderScheduleGrid();}
 function showAT(id,btn){document.querySelectorAll('[id^="at-"]').forEach(e=>e.style.display='none');document.querySelectorAll('.it').forEach(t=>t.classList.remove('active'));document.getElementById('at-'+id).style.display='';btn.classList.add('active');if(id==='jornada')renderScheduleGrid();if(id==='imprimir'){populateSels();renderImpPrev();}if(id==='resultados'){populateSels();renderCaptura();}if(id==='promociones'){populateSels();renderPromoP();}}
 function renderLigasAdmin(){const el=document.getElementById('ligas-list');if(!el)return;el.innerHTML=S.ligas.map(l=>`<div style="display:flex;align-items:center;gap:.6rem;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.65rem .85rem;margin-bottom:.3rem"><div style="flex:1"><div style="font-weight:600">${l.nombre}</div><div style="font-size:.68rem;color:var(--muted2)">${l.cat||''} · ${l.dia||''} · ${l.nj||6} jornadas</div></div><span class="bdg b-ok">${(l.status||'activa').toUpperCase()}</span><button class="btn bd bxs" onclick="delLiga('${l.id}')">✕</button></div>`).join('')||'<p style="color:var(--muted2);font-size:.78rem">Sin ligas.</p>';}
-async function createLiga(){const n=document.getElementById('nl-n').value.trim();if(!n){toast('Escribe nombre',1);return;}const l={id:uid(),nombre:n,cat:document.getElementById('nl-c').value,status:'activa',nj:parseInt(document.getElementById('nl-nj').value)||6,dia:document.getElementById('nl-d').value,inicio:document.getElementById('nl-i').value,fin:document.getElementById('nl-f').value};await fsSet('ligas',l.id,l);if(!S.activeLiga)S.activeLiga=l.id;closeM('m-liga');toast('✓ Liga creada');}
+async function createLiga(){const n=document.getElementById('nl-n').value.trim();if(!n){toast('Escribe nombre',1);return;}const l={id:uid(),nombre:n,cat:document.getElementById('nl-c').value,status:'activa',nj:parseInt(document.getElementById('nl-nj').value)||6,dia:document.getElementById('nl-d').value,inicio:document.getElementById('nl-i').value,fin:document.getElementById('nl-f').value};await fsSet('ligas',l.id,l);if(!S.activeLiga)S.activeLiga=l.id;closeM('m-edit-group');toast('✓ Liga creada');}
 async function delLiga(id){if(!confirm('¿Eliminar?'))return;const ops=[{op:'del',col:'ligas',id}];S.players.filter(p=>p.liga===id).forEach(p=>ops.push({op:'del',col:'players',id:p.id}));S.partidos.filter(p=>p.liga===id).forEach(p=>ops.push({op:'del',col:'partidos',id:p.id}));S.jornadas.filter(j=>j.liga===id).forEach(j=>ops.push({op:'del',col:'jornadas',id:j.id}));await fsBatch(ops);if(S.activeLiga===id)S.activeLiga=S.ligas.find(l=>l.id!==id)?.id||null;toast('Liga eliminada');}
 async function addP(){const n=document.getElementById('pn').value.trim();if(!n){toast('Escribe nombre',1);return;}const liga=document.getElementById('pl').value;if(!liga){toast('Selecciona liga',1);return;}const ps=S.players.filter(p=>p.liga===liga);const p={id:uid(),nombre:n,cat:document.getElementById('pc').value,liga,tel:document.getElementById('pt').value,orden:ps.length,grupo:Math.floor(ps.length/4)+1,ausente:false};await fsSet('players',p.id,p);document.getElementById('pn').value='';document.getElementById('pt').value='';toast('✓ Jugador agregado');}
 async function delP(id){await fsDel('players',id);toast('Eliminado');}
@@ -631,33 +634,37 @@ function renderPromoP(){
 function editGroupPos(lid,g,jId){
   const st=calcGroupPos(lid,g,jId);
   const grupos=[...new Set(S.players.filter(p=>p.liga===lid).map(p=>p.grupo))].sort((a,b)=>a-b);
-  const modal=document.getElementById('m-liga');
-  if(!modal)return;
-  modal.innerHTML=`<div class="modal" style="max-width:520px">
-    <button class="mc" onclick="closeM('m-liga');renderPromoP()">✕</button>
+  
+  // Build modal content
+  const inner=document.querySelector('#m-liga .modal');
+  if(!inner){console.error('Modal not found');return;}
+  
+  inner.innerHTML=`<button class="mc" onclick="closeM('m-liga');renderPromoP()">✕</button>
     <h2>EDITAR <em>GRUPO ${g}</em></h2>
     <p style="font-size:.76rem;color:var(--muted2);margin-bottom:.85rem">
-      Arrastra para reordenar · o cambia el grupo de un jugador
+      Arrastra para reordenar · cambia el grupo con el dropdown si hay un error
     </p>
     <div class="dlist" id="edit-group-list">
-      ${st.map((s,i)=>`
-        <div class="di" draggable="true" data-pid="${s.player.id}">
-          <span style="color:var(--muted);font-size:.82rem">⠿</span>
-          <span style="font-family:'Bebas Neue';font-size:.95rem;color:var(--muted);min-width:20px">${i+1}</span>
-          <div class="pav">${s.player.nombre[0]}</div>
-          <span style="flex:1;font-size:.82rem;font-weight:500">${s.player.nombre}</span>
-          <span style="font-size:.72rem;color:${s.pts>=0?'var(--accent)':'var(--accent2)'};margin-right:.5rem">${s.pts>0?'+':''}${s.pts}</span>
-          <select data-pid="${s.player.id}" style="background:var(--card2);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.72rem;padding:2px 4px;width:60px">
-            ${grupos.map(gr=>`<option value="${gr}"${gr===g?' selected':''}>G${gr}</option>`).join('')}
-          </select>
-        </div>`).join('')}
+      ${st.map((s,i)=>`<div class="di" draggable="true" data-pid="${s.player.id}">
+        <span style="color:var(--muted);font-size:.82rem">⠿</span>
+        <span class="pos-num" style="font-family:'Bebas Neue';font-size:.95rem;color:var(--muted);min-width:20px">${i+1}</span>
+        <div class="pav">${s.player.nombre[0]}</div>
+        <span style="flex:1;font-size:.82rem;font-weight:500">${s.player.nombre}</span>
+        <span style="font-size:.72rem;color:${s.pts>=0?'var(--accent)':'var(--accent2)'};margin-right:.5rem">${s.pts>0?'+':''}${s.pts}</span>
+        <select data-pid="${s.player.id}" style="background:var(--card2);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.72rem;padding:2px 4px;width:60px">
+          ${grupos.map(gr=>`<option value="${gr}"${gr===g?' selected':''}>G${gr}</option>`).join('')}
+        </select>
+      </div>`).join('')}
     </div>
+    <div style="font-size:.7rem;color:var(--muted2);margin-top:.5rem">Si cambias de grupo, el grupo destino puede quedar con 5 temporalmente — corrígelo también.</div>
     <div class="brow" style="margin-top:.85rem">
-      <button class="btn bp bsm" onclick="saveGroupEdit('${lid}',${g})">💾 Guardar cambios</button>
+      <button class="btn bp bsm" onclick="saveGroupEdit('${lid}',${g})">💾 Guardar</button>
       <button class="btn bs bsm" onclick="closeM('m-liga');renderPromoP()">Cancelar</button>
-    </div>
-  </div>`;
+    </div>`;
+  
   openM('m-liga');
+  
+  // Init drag
   let dsrc2=null;
   const list=document.getElementById('edit-group-list');
   list.querySelectorAll('.di').forEach(item=>{
@@ -673,6 +680,7 @@ function editGroupPos(lid,g,jId){
     });
   });
 }
+
 
 function updGroupEdit(){
   document.querySelectorAll('#edit-group-list .di').forEach((item,i)=>{
@@ -718,7 +726,7 @@ async function saveGroupEdit(lid,g){
     });
   }
   await fsBatch(ops);
-  closeM('m-liga');
+  closeM('m-edit-group');
   toast('✓ Grupo '+g+' actualizado');
   renderPromoP();
 }
