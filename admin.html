@@ -367,7 +367,7 @@ select option{background:var(--dark);}
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, getDocs, writeBatch } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
 const ADMIN_EMAIL = 'pablolc20111@gmail.com';
 
@@ -394,19 +394,25 @@ let modoDirecto = {}; // {jId_g: true/false}
 let dsrc = null;
 
 // ═══ AUTH ═══
-document.getElementById('google-login-btn').onclick = async () => {
-  try {
-    const result = await signInWithPopup(auth, provider);
+// Handle redirect result on page load
+getRedirectResult(auth).then(result => {
+  if(result?.user){
     const email = result.user.email;
     if(email !== ADMIN_EMAIL){
-      await signOut(auth);
+      signOut(auth);
       document.getElementById('login-error').style.display='block';
-      document.getElementById('login-error').textContent = `${email} no tiene acceso de administrador.`;
+      document.getElementById('login-error').textContent = email + ' no tiene acceso de administrador.';
     }
+  }
+}).catch(e => console.error('Redirect result error:', e));
+
+document.getElementById('google-login-btn').onclick = async () => {
+  try {
+    await signInWithRedirect(auth, provider);
   } catch(e) {
     console.error(e);
     document.getElementById('login-error').style.display='block';
-    document.getElementById('login-error').textContent = 'Error al iniciar sesión. Intenta de nuevo.';
+    document.getElementById('login-error').textContent = 'Error: ' + e.message;
   }
 };
 
