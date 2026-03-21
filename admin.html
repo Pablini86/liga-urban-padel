@@ -431,7 +431,74 @@ function updateJN(){const lid=document.getElementById('jl')?.value;if(!lid)retur
 
 // ═══ SCHEDULE GRID ═══
 let schedDragGrupo=null,schedDragFrom=null;
-function renderScheduleGrid(){const lid=document.getElementById('jl')?.value;if(!lid){document.getElementById('sched-grid-container').innerHTML='';return;}const turnos=document.getElementById('jt').value.split('\n').map(t=>t.trim()).filter(Boolean);const canchas=parseInt(document.getElementById('jc').value)||6;const grupos=[...new Set(S.players.filter(p=>p.liga===lid).map(p=>p.grupo))].sort((a,b)=>a-b);const jnum=parseInt(document.getElementById('jn').value)||1;const tempKey=`${lid}_j${jnum}`;if(!scheduleAssignments[tempKey])scheduleAssignments[tempKey]={};const asgn=scheduleAssignments[tempKey];const assigned=new Set(Object.values(asgn));const unassigned=grupos.filter(g=>!assigned.has(g));const pool=document.getElementById('unassigned-pool');if(pool){pool.innerHTML=unassigned.length?unassigned.map(g=>`<div class="pool-chip" draggable="true" data-grupo="${g}" ondragstart="schedDS(event,'pool',${g})" ondragend="schedDE(event)">G${g}</div>`).join(''):'<span style="color:var(--muted2);font-size:.78rem">✓ Todos asignados</span>';}const cont=document.getElementById('sched-grid-container');let html=`<div class="sched-grid" style="grid-template-columns:90px repeat(${canchas},1fr)"><div class="sched-th">HORA\\C</div>`;for(let c=1;c<=canchas;c++)html+=`<div class="sched-th">C${c}</div>`;turnos.forEach(turno=>{html+=`<div class="sched-time">${turno}</div>`;for(let c=1;c<=canchas;c++){const key=`${turno}_C${c}`;const g=asgn[key];if(g){const gps=S.players.filter(p=>p.liga===lid&&p.grupo===g);const names=gps.map(p=>p.nombre.split(' ')[0]).join(', ');html+=`<div class="sched-slot filled" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="schedDrop(event,'${key}')"><div class="slot-grupo" draggable="true" ondragstart="schedDS(event,'slot:${key}',${g})" ondragend="schedDE(event)"><div class="slot-grupo-num">G${g}</div><div class="slot-grupo-names">${names}</div></div><button class="slot-remove" onclick="schedRm('${tempKey}','${key}');renderScheduleGrid()">✕</button></div>`;}else{html+=`<div class="sched-slot" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="schedDrop(event,'${key}')"><span style="font-size:.6rem;color:var(--muted)">libre</span></div>`;}}}html+='</div>';cont.innerHTML=html;}
+function renderScheduleGrid(){
+  const lid=document.getElementById('jl')?.value;
+  if(!lid){document.getElementById('sched-grid-container').innerHTML='';return;}
+  const turnos=document.getElementById('jt').value.split('\n').map(t=>t.trim()).filter(Boolean);
+  const canchas=parseInt(document.getElementById('jc').value)||6;
+  const grupos=[...new Set(S.players.filter(p=>p.liga===lid).map(p=>p.grupo))].sort((a,b)=>a-b);
+  const jnum=parseInt(document.getElementById('jn').value)||1;
+  const tempKey=lid+'_j'+jnum;
+  if(!scheduleAssignments[tempKey])scheduleAssignments[tempKey]={};
+  const asgn=scheduleAssignments[tempKey];
+  const assigned=new Set(Object.values(asgn));
+  const unassigned=grupos.filter(g=>!assigned.has(g));
+  const pool=document.getElementById('unassigned-pool');
+  if(pool){
+    if(unassigned.length){
+      pool.innerHTML='';
+      unassigned.forEach(g=>{
+        const chip=document.createElement('div');
+        chip.className='pool-chip';chip.draggable=true;chip.dataset.grupo=g;
+        chip.textContent='G'+g;
+        chip.ondragstart=function(e){schedDS(e,'pool',g);};
+        chip.ondragend=schedDE;
+        pool.appendChild(chip);
+      });
+    } else {
+      pool.innerHTML='<span style="color:var(--muted2);font-size:.78rem">✓ Todos asignados</span>';
+    }
+  }
+  const cont=document.getElementById('sched-grid-container');
+  const grid=document.createElement('div');
+  grid.className='sched-grid';
+  grid.style.gridTemplateColumns='90px repeat('+canchas+',1fr)';
+  const mkSlotEvents=(el,key)=>{
+    el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('drag-over');});
+    el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
+    el.addEventListener('drop',e=>schedDrop(e,key));
+  };
+  const th=document.createElement('div');th.className='sched-th';th.textContent='HORA';grid.appendChild(th);
+  for(let c=1;c<=canchas;c++){const t=document.createElement('div');t.className='sched-th';t.textContent='C'+c;grid.appendChild(t);}
+  turnos.forEach(turno=>{
+    const tEl=document.createElement('div');tEl.className='sched-time';tEl.textContent=turno;grid.appendChild(tEl);
+    for(let c=1;c<=canchas;c++){
+      const key=turno+'_C'+c;const g=asgn[key];
+      const slot=document.createElement('div');
+      mkSlotEvents(slot,key);
+      if(g){
+        slot.className='sched-slot filled';
+        const gps=S.players.filter(p=>p.liga===lid&&p.grupo===g);
+        const names=gps.map(p=>p.nombre.split(' ')[0]).join(', ');
+        const inner=document.createElement('div');inner.className='slot-grupo';inner.draggable=true;
+        inner.innerHTML='<div class="slot-grupo-num">G'+g+'</div><div class="slot-grupo-names">'+names+'</div>';
+        inner.ondragstart=function(e){schedDS(e,'slot:'+key,g);};
+        inner.ondragend=schedDE;
+        const rmBtn=document.createElement('button');rmBtn.className='slot-remove';rmBtn.textContent='✕';
+        const tk=tempKey,sk=key;
+        rmBtn.onclick=function(){schedRm(tk,sk);renderScheduleGrid();};
+        slot.appendChild(inner);slot.appendChild(rmBtn);
+      } else {
+        slot.className='sched-slot';
+        const sp=document.createElement('span');sp.style.cssText='font-size:.6rem;color:var(--muted)';sp.textContent='libre';
+        slot.appendChild(sp);
+      }
+      grid.appendChild(slot);
+    }
+  });
+  cont.innerHTML='';cont.appendChild(grid);
+}
+
 function schedDS(e,from,g){schedDragGrupo=g;schedDragFrom=from;setTimeout(()=>e.target?.classList.add('dragging'),0);}
 function schedDE(e){e.target?.classList.remove('dragging');document.querySelectorAll('.sched-slot').forEach(s=>s.classList.remove('drag-over'));}
 function schedDrop(e,toKey){e.preventDefault();document.querySelectorAll('.sched-slot').forEach(s=>s.classList.remove('drag-over'));const lid=document.getElementById('jl')?.value;if(!lid||schedDragGrupo===null)return;const jnum=parseInt(document.getElementById('jn').value)||1;const tempKey=`${lid}_j${jnum}`;if(!scheduleAssignments[tempKey])scheduleAssignments[tempKey]={};const asgn=scheduleAssignments[tempKey];const existing=asgn[toKey];if(schedDragFrom?.startsWith('slot:')){const fk=schedDragFrom.replace('slot:','');delete asgn[fk];if(existing)asgn[fk]=existing;}asgn[toKey]=schedDragGrupo;renderScheduleGrid();}
