@@ -207,6 +207,7 @@ function calcPtsJornada(pid, lid, jid){
   if(!ms.length) return null;
   const p = pById(pid);
   if(p && p['ausente_j_'+jid]) return -6;
+  if(p && p['direct_j_'+jid]!==undefined) return p['direct_j_'+jid];
   if(ms.some(m=>m.ausente&&[m.a1,m.a2,m.b1,m.b2].includes(pid))) return -6;
   let gf=0,gc=0;
   ms.forEach(m=>{const enA=[m.a1,m.a2].includes(pid);gf+=enA?m.gA:m.gB;gc+=enA?m.gB:m.gA;});
