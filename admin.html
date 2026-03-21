@@ -823,13 +823,14 @@ async function applyAndCreateJornada(){
   document.getElementById('promo-actions').style.display='none';
   renderPromoHist(lid);
   // Wire edit buttons
-  // Wire edit buttons directly after render
-  document.querySelectorAll('#promo-prev .promo-edit-btn').forEach(function(btn){
-    btn.addEventListener('click', function(e){
-      e.stopPropagation();
-      editGroupPos(this.dataset.lid, parseInt(this.dataset.g), this.dataset.jid);
+  // Wire edit buttons after DOM renders
+  setTimeout(function(){
+    document.querySelectorAll('#promo-prev .promo-edit-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        editGroupPos(this.dataset.lid, parseInt(this.dataset.g), this.dataset.jid);
+      });
     });
-  });
+  }, 0);
 }
 
 async function saveHorarios(){
