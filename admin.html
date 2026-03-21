@@ -584,7 +584,7 @@ function renderPromoP(){
   ${grupos.map(g=>{
     const st=calcGroupPos(lid,g,jId);
     return '<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.75rem">'+
-      '<div style="font-family:\'Bebas Neue\';font-size:1rem;letter-spacing:1px;margin-bottom:.45rem">GRUPO '+g+' <button class="promo-edit-btn" data-g="'+g+'" data-lid="'+lid+'" data-jid="'+jId+'" style="font-size:.6rem;padding:1px 5px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--muted2);cursor:pointer"><span style="pointer-events:none">✏️</span></button></div>'+
+      '<div style="font-family:\'Bebas Neue\';font-size:1rem;letter-spacing:1px;margin-bottom:.45rem">GRUPO '+g+' <button class="promo-edit-btn" onclick="editGroupPos(this.dataset.lid,parseInt(this.dataset.g),this.dataset.jid)" data-g="'+g+'" data-lid="'+lid+'" data-jid="'+jId+'" style="font-size:.6rem;padding:1px 5px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--muted2);cursor:pointer">✏️</button></div>'+
       st.map((s,i)=>{
         const isWin=i<n&&g>1,isLose=i>=st.length-n&&g<grupos.length;
         const rankColor=isWin?'var(--accent3)':isLose?'var(--accent2)':'var(--muted)';
@@ -823,14 +823,7 @@ async function applyAndCreateJornada(){
   document.getElementById('promo-actions').style.display='none';
   renderPromoHist(lid);
   // Wire edit buttons
-  // Wire edit buttons after DOM renders
-  setTimeout(function(){
-    document.querySelectorAll('#promo-prev .promo-edit-btn').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        editGroupPos(this.dataset.lid, parseInt(this.dataset.g), this.dataset.jid);
-      });
-    });
-  }, 0);
+
 }
 
 async function saveHorarios(){
