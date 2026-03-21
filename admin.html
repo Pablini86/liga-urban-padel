@@ -629,37 +629,48 @@ function renderPromoP(){
 }
 
 function editGroupPos(lid,g,jId){
-  // Show modal to reorder players within a group
-  const ps=S.players.filter(p=>p.liga===lid&&p.grupo===g);
   const st=calcGroupPos(lid,g,jId);
-  const modal=document.getElementById('m-liga');  // reuse modal
+  const grupos=[...new Set(S.players.filter(p=>p.liga===lid).map(p=>p.grupo))].sort((a,b)=>a-b);
+  const modal=document.getElementById('m-liga');
   if(!modal)return;
-  modal.innerHTML=`<div class="modal">
+  modal.innerHTML=`<div class="modal" style="max-width:520px">
     <button class="mc" onclick="closeM('m-liga');renderPromoP()">✕</button>
     <h2>EDITAR <em>GRUPO ${g}</em></h2>
-    <p style="font-size:.76rem;color:var(--muted2);margin-bottom:.85rem">Arrastra para reordenar. El orden determina quién sube o baja.</p>
+    <p style="font-size:.76rem;color:var(--muted2);margin-bottom:.85rem">
+      Arrastra para reordenar · o cambia el grupo de un jugador
+    </p>
     <div class="dlist" id="edit-group-list">
-      ${st.map((s,i)=>`<div class="di" draggable="true" data-pid="${s.player.id}">
-        <span style="color:var(--muted);font-size:.82rem">⠿</span>
-        <span style="font-family:'Bebas Neue';font-size:.95rem;color:var(--muted);min-width:20px">${i+1}</span>
-        <div class="pav">${s.player.nombre[0]}</div>
-        <span style="flex:1;font-size:.8rem">${s.player.nombre}</span>
-        <span style="font-size:.7rem;color:${s.pts>=0?'var(--accent)':'var(--accent2)'}">${s.pts>0?'+':''}${s.pts}</span>
-      </div>`).join('')}
+      ${st.map((s,i)=>`
+        <div class="di" draggable="true" data-pid="${s.player.id}">
+          <span style="color:var(--muted);font-size:.82rem">⠿</span>
+          <span style="font-family:'Bebas Neue';font-size:.95rem;color:var(--muted);min-width:20px">${i+1}</span>
+          <div class="pav">${s.player.nombre[0]}</div>
+          <span style="flex:1;font-size:.82rem;font-weight:500">${s.player.nombre}</span>
+          <span style="font-size:.72rem;color:${s.pts>=0?'var(--accent)':'var(--accent2)'};margin-right:.5rem">${s.pts>0?'+':''}${s.pts}</span>
+          <select data-pid="${s.player.id}" style="background:var(--card2);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.72rem;padding:2px 4px;width:60px">
+            ${grupos.map(gr=>`<option value="${gr}"${gr===g?' selected':''}>G${gr}</option>`).join('')}
+          </select>
+        </div>`).join('')}
     </div>
     <div class="brow" style="margin-top:.85rem">
-      <button class="btn bp bsm" onclick="saveGroupEdit('${lid}',${g})">💾 Guardar orden</button>
+      <button class="btn bp bsm" onclick="saveGroupEdit('${lid}',${g})">💾 Guardar cambios</button>
       <button class="btn bs bsm" onclick="closeM('m-liga');renderPromoP()">Cancelar</button>
     </div>
   </div>`;
   openM('m-liga');
-  // Init drag on list
   let dsrc2=null;
   const list=document.getElementById('edit-group-list');
   list.querySelectorAll('.di').forEach(item=>{
     item.addEventListener('dragstart',e=>{dsrc2=item;item.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
     item.addEventListener('dragend',()=>{item.classList.remove('dragging');updGroupEdit();});
-    item.addEventListener('dragover',e=>{e.preventDefault();if(dsrc2&&dsrc2!==item){const r=item.getBoundingClientRect();if(e.clientY<r.top+r.height/2)list.insertBefore(dsrc2,item);else list.insertBefore(dsrc2,item.nextSibling);}});
+    item.addEventListener('dragover',e=>{
+      e.preventDefault();
+      if(dsrc2&&dsrc2!==item){
+        const r=item.getBoundingClientRect();
+        if(e.clientY<r.top+r.height/2)list.insertBefore(dsrc2,item);
+        else list.insertBefore(dsrc2,item.nextSibling);
+      }
+    });
   });
 }
 
@@ -673,13 +684,42 @@ async function saveGroupEdit(lid,g){
   const items=document.querySelectorAll('#edit-group-list .di');
   if(!items.length)return;
   const ops=[];
-  items.forEach((item,i)=>{
-    const p=S.players.find(x=>x.id===item.dataset.pid);
-    if(p){p.orden=(g-1)*4+i;ops.push({op:'set',col:'players',id:p.id,data:{...p}});}
+  // Get new group assignments from selects
+  const newGroups={};
+  items.forEach(item=>{
+    const sel=item.querySelector('select');
+    if(sel) newGroups[item.dataset.pid]=parseInt(sel.value);
   });
+  // Update orden within each target group
+  // First apply group changes
+  const groupCounts={};
+  items.forEach((item,i)=>{
+    const pid=item.dataset.pid;
+    const p=S.players.find(x=>x.id===pid);
+    if(!p)return;
+    const newG=newGroups[pid]||g;
+    if(!groupCounts[newG])groupCounts[newG]=0;
+    const newOrd=(newG-1)*4+groupCounts[newG];
+    groupCounts[newG]++;
+    const updated={...p,grupo:newG,orden:newOrd};
+    ops.push({op:'set',col:'players',id:pid,data:updated});
+  });
+  // Also update partidos that involve moved players if J exists
+  const jId=document.getElementById('prj')?.value;
+  if(jId){
+    Object.entries(newGroups).forEach(([pid,newG])=>{
+      const oldP=S.players.find(x=>x.id===pid);
+      if(oldP&&oldP.grupo!==newG){
+        // Update matches in the new jornada
+        S.partidos.filter(m=>m.jornadaId===jId&&[m.a1,m.a2,m.b1,m.b2].includes(pid)).forEach(m=>{
+          ops.push({op:'set',col:'partidos',id:m.id,data:{...m,grupo:newG}});
+        });
+      }
+    });
+  }
   await fsBatch(ops);
   closeM('m-liga');
-  toast('✓ Orden del grupo '+g+' guardado');
+  toast('✓ Grupo '+g+' actualizado');
   renderPromoP();
 }
 
