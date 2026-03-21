@@ -167,11 +167,9 @@ select option{background:var(--dark);}
 </style>
 </head>
 <body>
-<script>
-</script>
 
 <!-- LOGIN -->
-<!-- removing old early script --> so HTML onclick works before Firebase loads
+<script>
 function checkAdminPass(){
   const email = document.getElementById('admin-email-input').value.trim();
   const pass = document.getElementById('admin-pass-input').value;
@@ -211,7 +209,8 @@ function checkAdminPass(){
       btn.disabled=false;
     });
 }
-</script>
+
+</script></script>
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">URBAN <span>PADEL</span></div>
