@@ -167,36 +167,47 @@ select option{background:var(--dark);}
 </style>
 </head>
 <body>
+<script>
+</script>
 
 <!-- LOGIN -->
-<script>
-// Early definition so HTML onclick works before Firebase loads
+<!-- removing old early script --> so HTML onclick works before Firebase loads
 function checkAdminPass(){
   const email = document.getElementById('admin-email-input').value.trim();
   const pass = document.getElementById('admin-pass-input').value;
   const errEl = document.getElementById('login-error');
-  const btn = document.querySelector('.google-btn');
-  if(!window._fbAuth){
+  const btn = document.querySelector('#login-btn');
+  if(!firebase.apps.length){
     errEl.style.display='block';
-    errEl.textContent='Cargando... intenta de nuevo en 2 segundos.';
+    errEl.textContent='Cargando... intenta de nuevo.';
+    setTimeout(()=>{errEl.style.display='none';},2000);
     return;
   }
   btn.textContent='Entrando...';
   btn.disabled=true;
-  window._fbAuth.signInWithEmailAndPassword(email, pass)
+  firebase.auth().signInWithEmailAndPassword(email, pass)
     .then(result=>{
+      const ADMIN='pablolc20111@gmail.com';
+      if(result.user.email!==ADMIN){
+        firebase.auth().signOut();
+        errEl.style.display='block';
+        errEl.textContent='No tienes acceso de administrador.';
+        btn.innerHTML='<span>🔐</span> Entrar';
+        btn.disabled=false;
+        return;
+      }
       errEl.style.display='none';
       document.getElementById('login-screen').style.display='none';
       document.getElementById('app-screen').style.display='block';
       document.getElementById('user-email').textContent=result.user.email;
-      window._initFS && window._initFS();
+      initFirestoreListeners();
     })
     .catch(()=>{
       errEl.style.display='block';
       errEl.textContent='Correo o contraseña incorrectos.';
       document.getElementById('admin-pass-input').value='';
       document.getElementById('admin-pass-input').focus();
-      btn.innerHTML='<span style="font-size:1.1rem">🔐</span> Entrar';
+      btn.innerHTML='<span>🔐</span> Entrar';
       btn.disabled=false;
     });
 }
@@ -219,22 +230,14 @@ function checkAdminPass(){
         style="width:100%;padding:.75rem 1rem;border-radius:8px;border:1px solid var(--border2);
         background:var(--card2);color:var(--text);font-family:'Outfit',sans-serif;font-size:.95rem;
         outline:none"
-        onkeydown="if(event.key==='Enter')(window.checkAdminPass||function(){})()">
+        onkeydown="if(event.key==='Enter')checkAdminPass()">
     </div>
-    <button class="google-btn" id="login-btn" style="border-color:var(--accent)">
+    <button class="google-btn" id="login-btn" style="border-color:var(--accent)" onclick="checkAdminPass()">
       <span style="font-size:1.1rem">🔐</span>
       Entrar
     </button>
     <div class="login-error" id="login-error" style="display:none">Correo o contraseña incorrectos.</div>
-<script>
-document.getElementById("login-btn").addEventListener("click", function(){
-  if(window.checkAdminPass) window.checkAdminPass();
-  else {
-    document.getElementById("login-error").style.display="block";
-    document.getElementById("login-error").textContent="Cargando Firebase... espera 2 segundos e intenta de nuevo.";
-  }
-});
-</script>
+
   </div>
 </div>
 
@@ -422,6 +425,7 @@ document.getElementById("login-btn").addEventListener("click", function(){
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
 <script>
 
 const ADMIN_EMAIL = "pablolc20111@gmail.com";
@@ -449,13 +453,14 @@ let dsrc = null;
 // ═══ AUTH ═══
 // Handle redirect result on page load
 const auth = firebase.auth();
+window._auth = auth;
 
 // Expose auth to early script
 window._fbAuth = auth;
 window._initFS = initFirestoreListeners;
 
 // Auto-login if already authenticated
-auth.onAuthStateChanged(user => {
+firebase.auth().onAuthStateChanged(user => {
   if(user && user.email === ADMIN_EMAIL){
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app-screen').style.display='block';
@@ -465,7 +470,7 @@ auth.onAuthStateChanged(user => {
 });
 
 document.getElementById('logout-btn').onclick = () => {
-  window._fbAuth.signOut().then(() => {
+  firebase.auth().signOut().then(() => {
     document.getElementById('app-screen').style.display='none';
     document.getElementById('login-screen').style.display='flex';
     document.getElementById('admin-pass-input').value='';
