@@ -4,7 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="format-detection" content="telephone=no, address=no, email=no">
-<title>Urban Padel Life</title>
+<title>Urban Padel Life · Las Rosas</title>
+<meta name="description" content="Liga Americana de Pádel · Urban Padel Life Las Rosas · Guadalajara">
+<meta property="og:title" content="Urban Padel Life · Liga Americana">
+<meta property="og:description" content="Tabla general, resultados y horarios de la Liga Americana de Pádel">
+<meta property="og:image" content="logo.jpg">
+<link rel="icon" type="image/jpeg" href="logo.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -147,7 +152,7 @@ td.tot{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;}
 <body>
 
 <nav>
-  <div class="logo" onclick="goHome()">URBAN <span>PADEL</span></div>
+  <div class="logo" onclick="goHome()" style="display:flex;align-items:center;gap:.5rem"><img src="logo.jpg" alt="Urban Padel Life" style="height:32px;filter:invert(1);object-fit:contain"></div>
   <div class="nav-right">
     <span class="nav-liga-name" id="nav-liga-name"></span>
     <button class="back-btn" id="back-btn" onclick="goHome()">← Ligas</button>
@@ -158,12 +163,45 @@ td.tot{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;}
   <!-- HOME VIEW -->
   <div class="view active" id="view-home">
     <div class="home-hero">
-      <h1>URBAN <span>PADEL</span> LIFE</h1>
+      <img src="logo.jpg" alt="Urban Padel Life Las Rosas" style="height:70px;filter:invert(1);object-fit:contain;margin-bottom:.75rem;display:block;margin-left:auto;margin-right:auto">
       <p>Av. de las Rosas 171 · Col. Chapalita · Guadalajara</p>
     </div>
     <div id="leagues-grid" class="leagues-grid">
       <div class="empty-state"><div>🎾</div><p>Cargando ligas...</p></div>
     </div>
+
+    <!-- SPONSOR SECTION -->
+    <div style="margin-top:2rem;background:linear-gradient(135deg,rgba(212,240,0,.06),rgba(0,229,158,.04));border:1px solid rgba(212,240,0,.15);border-radius:16px;padding:1.75rem 1.5rem;text-align:center">
+      <div style="font-size:.65rem;font-weight:700;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:.5rem">Patrocina la Liga</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:3px;margin-bottom:.5rem">¿QUIERES SER <span style="color:var(--accent)">PATROCINADOR</span>?</div>
+      <p style="font-size:.82rem;color:var(--muted2);margin-bottom:1.1rem;max-width:400px;margin-left:auto;margin-right:auto">Llega a más de 72 jugadores activos cada semana. Tu marca en la liga más activa de Guadalajara.</p>
+      <a href="https://wa.me/523334868183?text=Hola,%20me%20interesa%20patrocinar%20la%20Liga%20Urban%20Padel" target="_blank"
+        style="display:inline-flex;align-items:center;gap:.6rem;padding:.7rem 1.4rem;border-radius:8px;background:var(--accent);color:var(--black);font-weight:700;font-size:.85rem;text-decoration:none;transition:opacity .15s"
+        onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Contáctanos por WhatsApp
+      </a>
+    </div>
+
+    <!-- FOOTER -->
+    <footer style="margin-top:2.5rem;padding:1.5rem 0;border-top:1px solid var(--border);text-align:center">
+      <img src="logo.jpg" alt="Urban Padel Life" style="height:36px;filter:invert(1);object-fit:contain;margin-bottom:1rem;opacity:.7">
+      <div style="display:flex;justify-content:center;gap:1.25rem;margin-bottom:1rem">
+        <a href="https://www.instagram.com/urbanpadellife/" target="_blank"
+          style="display:flex;align-items:center;gap:.4rem;color:var(--muted2);font-size:.82rem;text-decoration:none;transition:color .15s"
+          onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted2)'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+          @urbanpadellife
+        </a>
+        <a href="https://wa.me/523334868183" target="_blank"
+          style="display:flex;align-items:center;gap:.4rem;color:var(--muted2);font-size:.82rem;text-decoration:none;transition:color .15s"
+          onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted2)'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          33 3486 8183
+        </a>
+      </div>
+      <div style="font-size:.68rem;color:var(--muted)">© 2026 Urban Padel Life Las Rosas · Guadalajara</div>
+    </footer>
   </div>
 
   <!-- LIGA VIEW -->
@@ -746,6 +784,25 @@ function openPlayer(pid,lid){
 }
 function closeModal(){document.getElementById('player-modal').classList.remove('open');}
 document.getElementById('player-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+</script>
+<!-- MOBILE BOTTOM BAR -->
+<div style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:150;background:rgba(8,8,8,.97);backdrop-filter:blur(20px);border-top:1px solid var(--border);padding:.6rem 1rem;justify-content:space-around;align-items:center" id="mobile-bar">
+  <a href="https://www.instagram.com/urbanpadellife/" target="_blank"
+    style="display:flex;flex-direction:column;align-items:center;gap:.25rem;color:var(--muted2);text-decoration:none;font-size:.65rem">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+    Instagram
+  </a>
+  <a href="https://wa.me/523334868183" target="_blank"
+    style="display:flex;flex-direction:column;align-items:center;gap:.25rem;color:var(--accent3);text-decoration:none;font-size:.65rem">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+    WhatsApp
+  </a>
+</div>
+<script>
+if(window.innerWidth<=600){
+  document.getElementById('mobile-bar').style.display='flex';
+  document.querySelector('main').style.paddingBottom='70px';
+}
 </script>
 </body>
 </html>
