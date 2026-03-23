@@ -11,7 +11,7 @@
 <meta property="og:image" content="logo.jpg">
 <link rel="icon" type="image/png" href="favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script><!-- v3 -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <style>
 :root{--black:#080808;--dark:#111;--card:#161616;--card2:#1c1c1c;--border:#242424;--border2:#303030;--accent:#d4f000;--accent2:#ff3b5c;--accent3:#00e59e;--text:#efefef;--muted:#505050;--muted2:#888;--gold:#ffd700;--silver:#b8b8b8;--bronze:#cd7f32;}
@@ -687,6 +687,11 @@ function renderHorarios(lid){
 
 function renderHorariosSingle(lid, jId){
   // Update pill styles
+  // Wire search input after render
+  setTimeout(()=>{
+    const inp=document.getElementById('h-search-j1')||document.getElementById('h-search-'+jId);
+    if(inp) inp.addEventListener('input',function(){filterHorarios(this.id);});
+  },50);
   document.querySelectorAll('[id^="hpill-"]').forEach(p=>{
     const active=p.id==='hpill-'+jId;
     p.style.background=active?'var(--accent)':'transparent';
@@ -699,13 +704,7 @@ function renderHorariosSingle(lid, jId){
   // J1: use hardcoded data from PDF since migration used generic IDs
   if(jornada && jornada.num===1){
     el.innerHTML=
-      '<div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.85rem">'+
-        '<div style="position:relative;flex:1">'+
-          '<input id="h-search-j1" type="text" placeholder="🔍  ¿A qué hora juego? Busca tu nombre..." '+
-            'oninput="filterHorarios('h-search-j1')" '+
-            'style="width:100%;padding:.65rem 1rem;border-radius:9px;border:1px solid var(--border2);background:var(--card2);color:var(--text);font-family:'Outfit',sans-serif;font-size:.88rem;outline:none;box-sizing:border-box">'+
-        '</div>'+
-      '</div>'+
+      '<input id="h-search-j1" type="text" placeholder="Busca tu nombre..." style="width:100%;padding:.65rem 1rem;border-radius:9px;border:1px solid var(--border2);background:var(--card2);color:var(--text);font-family:Outfit,sans-serif;font-size:.88rem;outline:none;box-sizing:border-box;margin-bottom:.85rem">'+
       '<div id="horarios-rows-j1">'+
       J1_HORARIOS.map(({grupo,turno,jugadores})=>
         '<div class="h-grupo" style="background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:.55rem;overflow:hidden">'+
@@ -839,7 +838,7 @@ document.getElementById('player-modal').addEventListener('click',function(e){if(
     WhatsApp
   </a>
 </div>
-<script async src="//www.instagram.com/embed.js"></script>
+<script async src="https://www.instagram.com/embed.js"></script>
 <script>
 if(window.innerWidth<=600){
   document.getElementById('mobile-bar').style.display='flex';
