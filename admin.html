@@ -103,7 +103,59 @@ select option{background:var(--dark);}
 #toast{position:fixed;bottom:1.4rem;left:50%;transform:translateX(-50%) translateY(80px);background:var(--accent);color:var(--black);padding:.52rem 1.25rem;border-radius:7px;font-weight:700;font-size:.8rem;z-index:999;transition:transform .25s ease;pointer-events:none;}
 #toast.show{transform:translateX(-50%) translateY(0);}
 #toast.err{background:var(--accent2);color:#fff;}
-@media(max-width:760px){.g2,.fg{grid-template-columns:1fr;}.fi.full{grid-column:1;}main{padding:.9rem;}.sh h1{font-size:1.85rem;}}
+@media(max-width:760px){
+  .g2,.fg{grid-template-columns:1fr;}
+  .fi.full{grid-column:1;}
+  main{padding:.75rem;margin-top:54px;}
+  .sh h1{font-size:1.6rem;}
+  .sh{margin-bottom:.85rem;}
+  
+  /* Nav mobile */
+  nav{padding:0 .75rem;}
+  .logo{font-size:1.1rem;}
+  #user-email{display:none;}
+  .uinfo{font-size:.7rem;}
+  
+  /* Tabs scroll horizontal */
+  .itabs{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;padding-bottom:2px;gap:0;}
+  .it{white-space:nowrap;padding:6px 10px;font-size:.72rem;}
+  
+  /* Captura - full width inputs */
+  .captura-nav{gap:.25rem;}
+  .captura-nav button{padding:.25rem .5rem;font-size:.8rem;}
+  
+  /* Score inputs bigger on mobile */
+  #captura-grupo input[type=number]{
+    font-size:2.5rem !important;
+    width:80px !important;
+    height:60px;
+  }
+  
+  /* Grid 1 col on mobile */
+  .gauto{grid-template-columns:1fr;}
+  
+  /* Cards padding */
+  .card{padding:.85rem;}
+  
+  /* Buttons row wrap */
+  .brow{flex-wrap:wrap;}
+  
+  /* Schedule grid scroll */
+  #sched-grid-container{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .sched-grid{min-width:500px;}
+  
+  /* Modal full screen on mobile */
+  .modal{border-radius:12px;padding:1.1rem;}
+  
+  /* Promo groups single col */
+  #promo-prev .gauto{grid-template-columns:1fr 1fr;}
+}
+
+@media(max-width:480px){
+  #promo-prev .gauto{grid-template-columns:1fr;}
+  .itabs{gap:0;}
+  .it{padding:5px 8px;font-size:.68rem;}
+}
 ::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:var(--black);}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
 </style>
 </head>
@@ -282,6 +334,34 @@ select option{background:var(--dark);}
       </div>
     </div>
   </main>
+
+<!-- MOBILE QUICK NAV -->
+<div id="mob-nav" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;
+  background:rgba(8,8,8,.97);backdrop-filter:blur(20px);border-top:1px solid var(--border);
+  padding:.4rem 0;">
+  <div style="display:flex;justify-content:space-around">
+    <button onclick="showAT('resultados',document.querySelector('.it[onclick*=resultados]'))" 
+      style="display:flex;flex-direction:column;align-items:center;gap:.2rem;background:transparent;
+      border:none;color:var(--muted2);font-family:'Outfit',sans-serif;font-size:.6rem;cursor:pointer;padding:.3rem .5rem">
+      <span style="font-size:1.3rem">⚡</span>Resultados
+    </button>
+    <button onclick="showAT('promociones',document.querySelector('.it[onclick*=promociones]'))"
+      style="display:flex;flex-direction:column;align-items:center;gap:.2rem;background:transparent;
+      border:none;color:var(--muted2);font-family:'Outfit',sans-serif;font-size:.6rem;cursor:pointer;padding:.3rem .5rem">
+      <span style="font-size:1.3rem">⬆️</span>Promos
+    </button>
+    <button onclick="showAT('jornada',document.querySelector('.it[onclick*=jornada]'))"
+      style="display:flex;flex-direction:column;align-items:center;gap:.2rem;background:transparent;
+      border:none;color:var(--muted2);font-family:'Outfit',sans-serif;font-size:.6rem;cursor:pointer;padding:.3rem .5rem">
+      <span style="font-size:1.3rem">📅</span>Jornada
+    </button>
+    <button onclick="showAT('imprimir',document.querySelector('.it[onclick*=imprimir]'))"
+      style="display:flex;flex-direction:column;align-items:center;gap:.2rem;background:transparent;
+      border:none;color:var(--muted2);font-family:'Outfit',sans-serif;font-size:.6rem;cursor:pointer;padding:.3rem .5rem">
+      <span style="font-size:1.3rem">🖨️</span>Imprimir
+    </button>
+  </div>
+</div>
 </div>
 
 <!-- MODALS -->
@@ -356,6 +436,10 @@ function showApp(email){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app-screen').style.display='block';
   document.getElementById('user-email').textContent=email;
+  if(window.innerWidth<=760){
+    const mn=document.getElementById('mob-nav');
+    if(mn){mn.style.display='block';document.querySelector('main').style.paddingBottom='80px';}
+  }
   initListeners();
 }
 
@@ -542,7 +626,7 @@ function getCS(jId,g){const k=csKey(jId,g);if(!capturaState[k]){const gms=S.part
 function renderCaptura(){const lid=document.getElementById('rl')?.value;const jSel=document.getElementById('rj');if(lid&&jSel){const js=S.jornadas.filter(j=>j.liga===lid&&S.partidos.some(p=>p.jornadaId===j.id)).sort((a,b)=>b.num-a.num);const cur=jSel.value;jSel.innerHTML='<option value="">— selecciona —</option>'+js.map(j=>`<option value="${j.id}"${j.id===cur?' selected':''}>J${j.num} · ${j.fecha}</option>`).join('');}const jId=document.getElementById('rj')?.value;if(!jId){document.getElementById('captura-progress').innerHTML='';document.getElementById('captura-nav').innerHTML='';document.getElementById('captura-grupo').innerHTML='';return;}const ms=S.partidos.filter(p=>p.jornadaId===jId);const grupos=[...new Set(ms.map(m=>m.grupo))].sort((a,b)=>a-b);if(!capturaGrupoActivo||!grupos.includes(capturaGrupoActivo))capturaGrupoActivo=grupos[0];const grpFin=grupos.filter(g=>{const gms=ms.filter(m=>m.grupo===g);return gms.length>0&&gms.every(m=>m.finalizado&&m.gA!==null);}).length;const pct=grupos.length?Math.round(grpFin/grupos.length*100):0;document.getElementById('captura-progress').innerHTML=`<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.8rem 1rem"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.45rem"><span style="font-size:.76rem;font-weight:600">Progreso</span><span style="font-family:'Bebas Neue';font-size:1.15rem;color:${pct===100?'var(--accent3)':'var(--accent)'}">${grpFin}/${grupos.length} grupos</span></div><div style="height:7px;background:var(--border2);border-radius:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct===100?'var(--accent3)':'var(--accent)'};border-radius:4px;transition:width .3s"></div></div></div>`;document.getElementById('captura-nav').innerHTML=grupos.map(g=>{const gms=ms.filter(m=>m.grupo===g);const done=gms.length>0&&gms.every(m=>m.finalizado&&m.gA!==null);const active=g===capturaGrupoActivo;return`<button onclick="capturaGoTo(${g},'${jId}')" style="padding:.28rem .65rem;border-radius:6px;cursor:pointer;font-family:'Bebas Neue';font-size:.95rem;letter-spacing:1px;border:1.5px solid ${active?'var(--accent)':done?'var(--accent3)':'var(--border2)'};background:${active?'var(--accent)':done?'rgba(0,229,158,.08)':'transparent'};color:${active?'var(--black)':done?'var(--accent3)':'var(--muted2)'}">G${g}${done?' ✓':''}</button>`;}).join('');renderCapturaGrupo(jId);}
 function capturaGoTo(g,jId){capturaGrupoActivo=g;renderCapturaGrupo(jId);}
 function renderCapturaGrupo(jId){if(!jId)jId=document.getElementById('rj')?.value;const g=capturaGrupoActivo;if(!jId||!g){document.getElementById('captura-grupo').innerHTML='';return;}const gms=S.partidos.filter(m=>m.jornadaId===jId&&m.grupo===g).sort((a,b)=>a.set-b.set);if(!gms.length){document.getElementById('captura-grupo').innerHTML='<p style="color:var(--muted2)">Sin partidos</p>';return;}const jornada=S.jornadas.find(j=>j.id===jId);const pids=[gms[0].a1,gms[0].a2,gms[0].b1,gms[0].b2];const cs=getCS(jId,g);const grupos=[...new Set(S.partidos.filter(m=>m.jornadaId===jId).map(m=>m.grupo))].sort((a,b)=>a-b);const gIdx=grupos.indexOf(g);const prevG=grupos[gIdx-1]||null;const nextG=grupos[gIdx+1]||null;const done=gms.every(m=>m.finalizado&&m.gA!==null);const isDirect=modoDirecto[csKey(jId,g)]||false;function lD(pid){let gf=0,gc=0;gms.forEach((m,si)=>{const vA=cs.scores[si]?.[0]??0,vB=cs.scores[si]?.[1]??0;const enA=[m.a1,m.a2].includes(pid);gf+=enA?vA:vB;gc+=enA?vB:vA;});return gf-gc;}
-document.getElementById('captura-grupo').innerHTML=`<div style="max-width:600px;margin:0 auto"><div style="background:var(--card);border:2px solid ${done?'var(--accent3)':'var(--border)'};border-radius:14px;overflow:hidden"><div style="background:var(--card2);border-bottom:1px solid var(--border);padding:.7rem 1rem;display:flex;align-items:center;justify-content:space-between"><div><div style="font-family:'Bebas Neue';font-size:1.55rem;letter-spacing:3px;line-height:1">GRUPO ${g}</div><div style="font-size:.68rem;color:var(--muted2)">${gms[0].cancha} · ${gms[0].turno} · J${gms[0].jornada}${jornada?.fecha?' · '+jornada.fecha:''}</div></div><div style="display:flex;gap:.4rem">${prevG?`<button class="btn bs bsm" onclick="capturaGoTo(${prevG},'${jId}')">← G${prevG}</button>`:''} ${nextG?`<button class="btn bp bsm" onclick="capturaGoTo(${nextG},'${jId}')">G${nextG} →</button>`:''}</div></div><div style="display:flex;align-items:center;gap:.75rem;padding:.5rem 1rem;background:${isDirect?'rgba(212,240,0,.05)':'var(--black)'};border-bottom:1px solid var(--border)"><span style="font-size:.72rem;color:var(--muted2)">Modo:</span><button onclick="toggleModo('${jId}',${g})" style="padding:.3rem .8rem;border-radius:20px;border:1.5px solid ${isDirect?'var(--accent)':'var(--border2)'};background:${isDirect?'rgba(212,240,0,.1)':'transparent'};color:${isDirect?'var(--accent)':'var(--muted2)'};font-family:'Outfit',sans-serif;font-size:.75rem;font-weight:600;cursor:pointer">${isDirect?'⚡ DIRECTO':'📊 SETS'}</button><span style="font-size:.68rem;color:var(--muted2)">${isDirect?'Escribe diferencial directo':'Captura score de cada set'}</span></div><div style="padding:.85rem 1rem"><div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:.55rem .8rem;margin-bottom:.9rem"><div style="font-size:.6rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.45rem">Suplentes / Ausentes (−6 pts)</div><div style="display:flex;gap:.75rem;flex-wrap:wrap">${pids.map(pid=>{const isAus=cs.ausentes.has(pid);return`<label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;padding:.3rem .6rem;border-radius:6px;border:1px solid ${isAus?'var(--accent2)':'var(--border2)'};background:${isAus?'rgba(255,59,92,.1)':'transparent'}"><input type="checkbox" id="aus-${pid}" ${isAus?'checked':''} onchange="toggleAusente('${jId}',${g},'${pid}')"><span style="font-size:.82rem;font-weight:${isAus?700:400};color:${isAus?'var(--accent2)':'var(--text)'}">${pFN(pid).split(' ')[0]}</span>${isAus?'<span style="font-size:.65rem;color:var(--accent2)">−6</span>':''}</label>`;}).join('')}</div></div>${isDirect?`<div style="margin-bottom:.85rem"><div style="font-size:.6rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.6rem">DIFERENCIAL POR JUGADOR</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem">${pids.map(pid=>{const isAus=cs.ausentes.has(pid);const val=isAus?-6:(cs.directPts[pid]!==undefined?cs.directPts[pid]:'');return`<div style="background:var(--card2);border-radius:9px;border:1px solid var(--border);padding:.65rem .85rem;display:flex;align-items:center;gap:.65rem"><div style="flex:1"><div style="font-weight:700;font-size:.88rem">${pFN(pid).split(' ')[0]}</div></div><input type="number" id="direct-${pid}" value="${isAus?-6:val}" placeholder="ej. +8" ${isAus?'disabled':''} style="width:72px;text-align:center;font-family:'Bebas Neue';font-size:2rem;border-radius:8px;padding:.2rem .1rem;border:2px solid var(--border2);background:${isAus?'var(--border)':'var(--card)'};color:${isAus?'var(--muted2)':'var(--text)'};outline:none" oninput="updateDirect('${jId}',${g},'${pid}',this.value)"></div>`;}).join('')}</div></div>`:gms.map((m,si)=>{const vA=cs.scores[si]?.[0],vB=cs.scores[si]?.[1];const wA=vA!==null&&vB!==null&&vA>vB,wB=vA!==null&&vB!==null&&vB>vA;return`<div style="margin-bottom:.7rem"><div style="font-size:.6rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.35rem">SET ${m.set}</div><div style="display:grid;grid-template-columns:1fr 70px 24px 70px 1fr;gap:.4rem;align-items:center;background:var(--card2);border-radius:9px;border:1px solid var(--border);padding:.6rem .75rem"><div><div style="font-weight:700;font-size:.86rem">${pFN(m.a1).split(' ')[0]}</div><div style="font-size:.72rem;color:var(--muted2)">${pFN(m.a2).split(' ')[0]}</div></div><input type="number" min="0" max="99" value="${vA!==null?vA:''}" placeholder="—" style="width:70px;text-align:center;font-family:'Bebas Neue';font-size:2rem;border-radius:8px;padding:.2rem .1rem;border:2px solid ${wA?'var(--accent)':'var(--border2)'};background:${wA?'rgba(212,240,0,.08)':'var(--card)'};color:var(--text);outline:none" oninput="updateScore('${jId}',${g},${si},0,this.value)"><div style="text-align:center;font-size:.8rem;color:var(--muted)">—</div><input type="number" min="0" max="99" value="${vB!==null?vB:''}" placeholder="—" style="width:70px;text-align:center;font-family:'Bebas Neue';font-size:2rem;border-radius:8px;padding:.2rem .1rem;border:2px solid ${wB?'var(--accent)':'var(--border2)'};background:${wB?'rgba(212,240,0,.08)':'var(--card)'};color:var(--text);outline:none" oninput="updateScore('${jId}',${g},${si},1,this.value)"><div style="text-align:right"><div style="font-weight:700;font-size:.86rem">${pFN(m.b1).split(' ')[0]}</div><div style="font-size:.72rem;color:var(--muted2)">${pFN(m.b2).split(' ')[0]}</div></div></div></div>`;}).join('')}<div style="border-top:2px solid var(--border);padding-top:.8rem;margin-top:.3rem"><div style="font-size:.6rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.5rem">TOTAL · DIFERENCIAL</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem;margin-bottom:.85rem" id="diff-block-${g}">${pids.map(pid=>{const aus=cs.ausentes.has(pid);const d=aus?-6:(isDirect?(cs.directPts[pid]!==undefined?cs.directPts[pid]:0):lD(pid));return`<div style="text-align:center;background:var(--card2);border-radius:8px;border:1px solid ${d>0?'rgba(212,240,0,.2)':d<0?'rgba(255,59,92,.2)':'var(--border)'};padding:.55rem .3rem"><div style="font-size:.7rem;font-weight:600;margin-bottom:.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px">${pFN(pid).split(' ')[0]}</div><div style="font-family:'Bebas Neue';font-size:1.7rem;line-height:1;color:${aus?'var(--muted2)':d>0?'var(--accent)':d<0?'var(--accent2)':'var(--muted2)'}">${aus?'−6':d>0?'+'+d:d}</div>${aus?'<div style="font-size:.6rem;color:var(--accent2);margin-top:1px">suplente</div>':''}</div>`;}).join('')}</div><button class="btn bp" style="width:100%;font-size:.9rem;padding:.65rem" onclick="saveGrupoCaptura('${jId}',${g})">${done?'✏️ Actualizar':'💾 Guardar'} Grupo ${g}</button></div></div></div></div>`;}
+document.getElementById('captura-grupo').innerHTML=`<div style="max-width:600px;margin:0 auto"><div style="background:var(--card);border:2px solid ${done?'var(--accent3)':'var(--border)'};border-radius:14px;overflow:hidden"><div style="background:var(--card2);border-bottom:1px solid var(--border);padding:.7rem 1rem;display:flex;align-items:center;justify-content:space-between"><div><div style="font-family:'Bebas Neue';font-size:1.55rem;letter-spacing:3px;line-height:1">GRUPO ${g}</div><div style="font-size:.68rem;color:var(--muted2)">${gms[0].cancha} · ${gms[0].turno} · J${gms[0].jornada}${jornada?.fecha?' · '+jornada.fecha:''}</div></div><div style="display:flex;gap:.4rem">${prevG?`<button class="btn bs bsm" onclick="capturaGoTo(${prevG},'${jId}')">← G${prevG}</button>`:''} ${nextG?`<button class="btn bp bsm" onclick="capturaGoTo(${nextG},'${jId}')">G${nextG} →</button>`:''}</div></div><div style="display:flex;align-items:center;gap:.75rem;padding:.5rem 1rem;background:${isDirect?'rgba(212,240,0,.05)':'var(--black)'};border-bottom:1px solid var(--border)"><span style="font-size:.72rem;color:var(--muted2)">Modo:</span><button onclick="toggleModo('${jId}',${g})" style="padding:.3rem .8rem;border-radius:20px;border:1.5px solid ${isDirect?'var(--accent)':'var(--border2)'};background:${isDirect?'rgba(212,240,0,.1)':'transparent'};color:${isDirect?'var(--accent)':'var(--muted2)'};font-family:'Outfit',sans-serif;font-size:.75rem;font-weight:600;cursor:pointer">${isDirect?'⚡ DIRECTO':'📊 SETS'}</button><span style="font-size:.68rem;color:var(--muted2)">${isDirect?'Escribe diferencial directo':'Captura score de cada set'}</span></div><div style="padding:.85rem 1rem"><div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:.55rem .8rem;margin-bottom:.9rem"><div style="font-size:.6rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.45rem">Suplentes / Ausentes (−6 pts)</div><div style="display:flex;gap:.75rem;flex-wrap:wrap">${pids.map(pid=>{const isAus=cs.ausentes.has(pid);return`<label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;padding:.3rem .6rem;border-radius:6px;border:1px solid ${isAus?'var(--accent2)':'var(--border2)'};background:${isAus?'rgba(255,59,92,.1)':'transparent'}"><input type="checkbox" id="aus-${pid}" ${isAus?'checked':''} onchange="toggleAusente('${jId}',${g},'${pid}')"><span style="font-size:.82rem;font-weight:${isAus?700:400};color:${isAus?'var(--accent2)':'var(--text)'}">${pFN(pid).split(' ')[0]}</span>${isAus?'<span style="font-size:.65rem;color:var(--accent2)">−6</span>':''}</label>`;}).join('')}</div></div>${isDirect?`<div style="margin-bottom:.85rem"><div style="font-size:.6rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.6rem">DIFERENCIAL POR JUGADOR</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem">${pids.map(pid=>{const isAus=cs.ausentes.has(pid);const val=isAus?-6:(cs.directPts[pid]!==undefined?cs.directPts[pid]:'');return`<div style="background:var(--card2);border-radius:9px;border:1px solid var(--border);padding:.65rem .85rem;display:flex;align-items:center;gap:.65rem"><div style="flex:1"><div style="font-weight:700;font-size:.88rem">${pFN(pid).split(' ')[0]}</div></div><input type="number" id="direct-${pid}" inputmode="numeric" value="${isAus?-6:val}" placeholder="ej. +8" ${isAus?'disabled':''} style="width:72px;text-align:center;font-family:'Bebas Neue';font-size:2rem;border-radius:8px;padding:.2rem .1rem;border:2px solid var(--border2);background:${isAus?'var(--border)':'var(--card)'};color:${isAus?'var(--muted2)':'var(--text)'};outline:none" oninput="updateDirect('${jId}',${g},'${pid}',this.value)"></div>`;}).join('')}</div></div>`:gms.map((m,si)=>{const vA=cs.scores[si]?.[0],vB=cs.scores[si]?.[1];const wA=vA!==null&&vB!==null&&vA>vB,wB=vA!==null&&vB!==null&&vB>vA;return`<div style="margin-bottom:.7rem"><div style="font-size:.6rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.35rem">SET ${m.set}</div><div style="display:grid;grid-template-columns:1fr 70px 24px 70px 1fr;gap:.4rem;align-items:center;background:var(--card2);border-radius:9px;border:1px solid var(--border);padding:.6rem .75rem"><div><div style="font-weight:700;font-size:.86rem">${pFN(m.a1).split(' ')[0]}</div><div style="font-size:.72rem;color:var(--muted2)">${pFN(m.a2).split(' ')[0]}</div></div><input type="number" min="0" max="99" value="${vA!==null?vA:''}" placeholder="—" style="width:70px;text-align:center;font-family:'Bebas Neue';font-size:2rem;border-radius:8px;padding:.2rem .1rem;border:2px solid ${wA?'var(--accent)':'var(--border2)'};background:${wA?'rgba(212,240,0,.08)':'var(--card)'};color:var(--text);outline:none;-webkit-appearance:none;appearance:none" inputmode="numeric" oninput="updateScore('${jId}',${g},${si},0,this.value)"><div style="text-align:center;font-size:.8rem;color:var(--muted)">—</div><input type="number" min="0" max="99" value="${vB!==null?vB:''}" placeholder="—" style="width:70px;text-align:center;font-family:'Bebas Neue';font-size:2rem;border-radius:8px;padding:.2rem .1rem;border:2px solid ${wB?'var(--accent)':'var(--border2)'};background:${wB?'rgba(212,240,0,.08)':'var(--card)'};color:var(--text);outline:none;-webkit-appearance:none;appearance:none" inputmode="numeric" oninput="updateScore('${jId}',${g},${si},1,this.value)"><div style="text-align:right"><div style="font-weight:700;font-size:.86rem">${pFN(m.b1).split(' ')[0]}</div><div style="font-size:.72rem;color:var(--muted2)">${pFN(m.b2).split(' ')[0]}</div></div></div></div>`;}).join('')}<div style="border-top:2px solid var(--border);padding-top:.8rem;margin-top:.3rem"><div style="font-size:.6rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.5rem">TOTAL · DIFERENCIAL</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem;margin-bottom:.85rem" id="diff-block-${g}">${pids.map(pid=>{const aus=cs.ausentes.has(pid);const d=aus?-6:(isDirect?(cs.directPts[pid]!==undefined?cs.directPts[pid]:0):lD(pid));return`<div style="text-align:center;background:var(--card2);border-radius:8px;border:1px solid ${d>0?'rgba(212,240,0,.2)':d<0?'rgba(255,59,92,.2)':'var(--border)'};padding:.55rem .3rem"><div style="font-size:.7rem;font-weight:600;margin-bottom:.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px">${pFN(pid).split(' ')[0]}</div><div style="font-family:'Bebas Neue';font-size:1.7rem;line-height:1;color:${aus?'var(--muted2)':d>0?'var(--accent)':d<0?'var(--accent2)':'var(--muted2)'}">${aus?'−6':d>0?'+'+d:d}</div>${aus?'<div style="font-size:.6rem;color:var(--accent2);margin-top:1px">suplente</div>':''}</div>`;}).join('')}</div><button class="btn bp" style="width:100%;font-size:.9rem;padding:.65rem" onclick="saveGrupoCaptura('${jId}',${g})">${done?'✏️ Actualizar':'💾 Guardar'} Grupo ${g}</button></div></div></div></div>`;}
 function toggleModo(jId,g){const k=csKey(jId,g);modoDirecto[k]=!modoDirecto[k];renderCapturaGrupo(jId);}
 function updateDirect(jId,g,pid,val){const cs=getCS(jId,g);cs.directPts[pid]=val===''?0:parseInt(val)||0;refreshDiffBlock(jId,g);}
 function updateScore(jId,g,si,side,val){const cs=getCS(jId,g);if(!cs.scores[si])cs.scores[si]=[null,null];cs.scores[si][side]=val===''?null:parseInt(val)||0;const inputs=document.querySelectorAll('#captura-grupo input[type=number]');const si2=[...inputs].slice(si*2,si*2+2);if(si2.length===2){const vA=cs.scores[si][0],vB=cs.scores[si][1];const wA=vA!==null&&vB!==null&&vA>vB,wB=vA!==null&&vB!==null&&vB>vA;si2[0].style.borderColor=wA?'var(--accent)':'var(--border2)';si2[1].style.borderColor=wB?'var(--accent)':'var(--border2)';si2[0].style.background=wA?'rgba(212,240,0,.08)':'var(--card)';si2[1].style.background=wB?'rgba(212,240,0,.08)':'var(--card)';}refreshDiffBlock(jId,g);}
