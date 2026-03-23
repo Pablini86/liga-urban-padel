@@ -202,7 +202,7 @@ select option{background:var(--dark);}
     <div class="itabs">
       <button class="it active" onclick="showAT('ligas',this)">🏟️ Ligas</button>
       <button class="it" onclick="showAT('jugadores',this)">👤 Jugadores</button>
-      <button class="it" onclick="showAT('jornada',this)">📅 Jornada</button>
+      <button class="it" onclick="showAT('jornada',this)">🕐 Horarios</button>
       <button class="it" onclick="showAT('resultados',this)">⚡ Resultados</button>
       <button class="it" onclick="showAT('promociones',this)">⬆️ Promociones</button>
       <button class="it" onclick="showAT('imprimir',this)">🖨️ Imprimir</button>
@@ -538,7 +538,25 @@ function renderPlist(){const el=document.getElementById('plist');if(!el)return;c
 function renderDrag(){const el=document.getElementById('drag-cont');if(!el)return;const lid=document.getElementById('ol')?.value;const ps=[...S.players.filter(p=>p.liga===lid)].sort((a,b)=>a.orden-b.orden);if(!ps.length){el.innerHTML='<p style="color:var(--muted2);font-size:.74rem">Sin jugadores</p>';return;}const list=document.createElement('div');list.className='dlist';list.id='dl';ps.forEach((p,i)=>{const item=document.createElement('div');item.className='di';item.dataset.pid=p.id;item.draggable=true;item.innerHTML=`<span style="color:var(--muted);font-size:.82rem">⠿</span><span style="font-family:'Bebas Neue';font-size:.95rem;color:var(--muted);min-width:24px">${i+1}</span><div class="pav">${p.nombre[0]}</div><span style="flex:1;font-size:.8rem;font-weight:500">${p.nombre}</span><span style="font-size:.64rem;color:var(--muted2)">G${Math.floor(i/4)+1}</span>`;item.addEventListener('dragstart',e=>{dsrc=item;item.classList.add('dragging');e.dataTransfer.effectAllowed='move';});item.addEventListener('dragend',()=>{item.classList.remove('dragging');updDrag();});item.addEventListener('dragover',e=>{e.preventDefault();if(dsrc&&dsrc!==item){const r=item.getBoundingClientRect();if(e.clientY<r.top+r.height/2)list.insertBefore(dsrc,item);else list.insertBefore(dsrc,item.nextSibling);}});list.appendChild(item);});el.innerHTML='';el.appendChild(list);}
 function updDrag(){document.querySelectorAll('#dl .di').forEach((item,i)=>{item.querySelectorAll('span')[1].textContent=i+1;item.querySelectorAll('span')[4].textContent='G'+(Math.floor(i/4)+1);});}
 async function saveOrder(){const items=document.querySelectorAll('#dl .di');if(!items.length){toast('Sin jugadores',1);return;}const ops=[];items.forEach((item,i)=>{const p=S.players.find(x=>x.id===item.dataset.pid);if(p){p.orden=i;p.grupo=Math.floor(i/4)+1;ops.push({op:'set',col:'players',id:p.id,data:{...p}});}});await fsBatch(ops);toast('✓ Orden guardado');}
-function populateSels(){['pl','jl','rl','prl','iml','ol','xl-liga'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML=S.ligas.map(l=>`<option value="${l.id}"${l.id===cur?' selected':''}>${l.nombre}</option>`).join('');});}
+function populateSels(){
+  // Fill jornada dropdown
+  const jnEl=document.getElementById('jn');
+  if(jnEl&&jnEl.tagName==='SELECT'){
+    const lid=document.getElementById('jl')?.value;
+    const liga=S.ligas.find(l=>l.id===lid);
+    const nj=liga?.nj||6;
+    const cur=jnEl.value;
+    jnEl.innerHTML='<option value="">— selecciona —</option>';
+    for(let i=1;i<=nj;i++){
+      const j=S.jornadas.find(x=>x.liga===lid&&x.num===i);
+      const label=j?`J${i} · ${j.fecha||'Sin fecha'}`:`J${i}`;
+      const opt=document.createElement('option');
+      opt.value=i;opt.textContent=label;
+      if(cur==i)opt.selected=true;
+      jnEl.appendChild(opt);
+    }
+  }
+  ['pl','jl','rl','prl','iml','ol','xl-liga'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML=S.ligas.map(l=>`<option value="${l.id}"${l.id===cur?' selected':''}>${l.nombre}</option>`).join('');});}
 function updateJN(){const lid=document.getElementById('jl')?.value;if(!lid)return;const js=S.jornadas.filter(j=>j.liga===lid);document.getElementById('jn').value=(js.length?Math.max(...js.map(j=>j.num)):0)+1;}
 
 // ═══ SCHEDULE GRID ═══
@@ -908,6 +926,13 @@ async function applyAndCreateJornada(){
   renderPromoHist(lid);
   // Wire edit buttons
 
+}
+
+function enableHorarioEdit(){
+  window._jornadaLocked=false;
+  document.getElementById('sched-grid-container').style.pointerEvents='';
+  document.getElementById('sched-grid-container').style.opacity='';
+  toast('Puedes editar horarios — guarda cuando termines');
 }
 
 async function saveHorarios(){
