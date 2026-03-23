@@ -234,9 +234,9 @@ let activeLigaId = null;
 
 // FIRESTORE
 db.collection('ligas').onSnapshot(s=>{S.ligas=s.docs.map(d=>({id:d.id,...d.data()}));renderHome();if(activeLigaId)renderLiga(activeLigaId);});
-db.collection('players').onSnapshot(s=>{S.players=s.docs.map(d=>({id:d.id,...d.data()}));if(activeLigaId)renderLiga(activeLigaId);});
-db.collection('partidos').onSnapshot(s=>{S.partidos=s.docs.map(d=>({id:d.id,...d.data()}));if(activeLigaId)renderLiga(activeLigaId);});
-db.collection('jornadas').onSnapshot(s=>{S.jornadas=s.docs.map(d=>({id:d.id,...d.data()}));if(activeLigaId)renderLiga(activeLigaId);});
+db.collection('players').onSnapshot(s=>{S.players=s.docs.map(d=>({id:d.id,...d.data()}));renderHome();if(activeLigaId)renderLiga(activeLigaId);});
+db.collection('partidos').onSnapshot(s=>{S.partidos=s.docs.map(d=>({id:d.id,...d.data()}));renderHome();if(activeLigaId)renderLiga(activeLigaId);});
+db.collection('jornadas').onSnapshot(s=>{S.jornadas=s.docs.map(d=>({id:d.id,...d.data()}));renderHome();if(activeLigaId)renderLiga(activeLigaId);});
 
 // HELPERS
 const pById=id=>S.players.find(x=>x.id===id);
@@ -303,15 +303,23 @@ function renderHome(){
   el.innerHTML=S.ligas.filter(l=>l.status!=='archivada').map(l=>{
     const ps=S.players.filter(p=>p.liga===l.id).length;
     const js=S.jornadas.filter(j=>j.liga===l.id);
-    const nextJ=js.length+1;
+    // Find current jornada (last one with matches)
+    const jornadasConPartidos=js.filter(j=>S.partidos.some(p=>p.jornadaId===j.id));
+    const currentJ=jornadasConPartidos.length?Math.max(...jornadasConPartidos.map(j=>j.num)):0;
+    const nextJ=js.find(j=>{
+      const ms=S.partidos.filter(p=>p.jornadaId===j.id);
+      return ms.length>0&&!ms.some(m=>m.finalizado&&m.gA!==null);
+    });
+    const jornada_label=nextJ?`Jornada ${nextJ.num} próxima`:(currentJ?`En Jornada ${currentJ}`:'Por comenzar');
     return`<div class="league-card" onclick="openLiga('${l.id}')">
       <div class="lc-status"><span class="lc-dot"></span>En vivo</div>
       <div class="lc-name">${l.nombre}</div>
       <div class="lc-dia">${l.dia||''} · ${l.cat||'Mixta'}</div>
-      <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.5rem">
         <span class="lc-tag">${ps} jugadores</span>
-        <span class="lc-tag">${js.length}/${l.nj||6} jornadas</span>
+        <span class="lc-tag" style="background:rgba(0,229,158,.08);color:var(--accent3);border-color:rgba(0,229,158,.2)">${jornada_label}</span>
       </div>
+      <div style="font-size:.68rem;color:var(--muted2)">${currentJ}/${l.nj||6} jornadas completadas</div>
       <div class="lc-arrow">→</div>
     </div>`;
   }).join('');
