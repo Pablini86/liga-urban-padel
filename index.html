@@ -177,6 +177,7 @@ td.tot{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;}
       <button class="lt active" onclick="showLT('inicio',this)">🏠 Inicio</button>
       <button class="lt" onclick="showLT('tabla',this)">🏆 Tabla</button>
       <button class="lt" onclick="showLT('jornadas',this)">📅 Jornadas</button>
+      <button class="lt" onclick="showLT('horarios',this)">🕐 Horarios</button>
     </div>
 
     <!-- INICIO -->
@@ -204,6 +205,12 @@ td.tot{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;}
     <!-- JORNADAS -->
     <div class="ltab" id="lt-jornadas">
       <div id="jornadas-list"></div>
+    </div>
+
+    <!-- HORARIOS -->
+    <div class="ltab" id="lt-horarios">
+      <div id="horarios-sel" style="margin-bottom:1rem;display:flex;gap:.5rem;flex-wrap:wrap"></div>
+      <div id="horarios-content"></div>
     </div>
   </div>
 </main>
@@ -290,6 +297,7 @@ function showLT(id,btn){
   if(btn)btn.classList.add('active');
   if(id==='tabla'&&activeLigaId)renderTabla(activeLigaId);
   if(id==='jornadas'&&activeLigaId)renderJornadas(activeLigaId);
+  if(id==='horarios'&&activeLigaId)renderHorarios(activeLigaId);
 }
 
 // HOME
@@ -499,16 +507,20 @@ function renderJornadas(lid){
       hasResults?`<span class="jc-badge jc-pending">${fin}/${ms.length} sets</span>`:
       ms.length?`<span class="jc-badge jc-empty">Sin resultados</span>`:
       `<span class="jc-badge jc-empty">Por jugarse</span>`;
+    const bodyContent = hasResults ? renderJornadaBody(j.id,lid) : (ms.length ? renderJornadaFixture(j.id,lid) : `<div class="jc-empty-msg">⏳ Jornada aún no generada</div>`);
     return`<div class="jornada-card">
       <div class="jc-header" onclick="toggleJornada('${j.id}')">
         <div>
           <div class="jc-title">JORNADA ${j.num}</div>
           <div class="jc-meta">${j.fecha||'Fecha por confirmar'} · ${(j.turnos||[]).join(' · ')}</div>
         </div>
-        ${badge}
+        <div style="display:flex;align-items:center;gap:.5rem">
+          ${badge}
+          <button onclick="event.stopPropagation();showHorarioJornada('${lid}','${j.id}')" style="padding:2px 8px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--muted2);font-size:.68rem;cursor:pointer">🕐 Horarios</button>
+        </div>
       </div>
       <div class="jc-body" id="jb-${j.id}">
-        ${hasResults?renderJornadaBody(j.id,lid):`<div class="jc-empty-msg">⏳ Aún no hay resultados para esta jornada</div>`}
+        ${bodyContent}
       </div>
     </div>`;
   }).join('');
@@ -518,6 +530,32 @@ function toggleJornada(jId){
   const el=document.getElementById('jb-'+jId);
   if(!el)return;
   el.classList.toggle('open');
+}
+
+function renderJornadaFixture(jId,lid){
+  // Show groups and who plays who, no scores yet
+  const ms=S.partidos.filter(p=>p.jornadaId===jId).sort((a,b)=>a.grupo-b.grupo||a.set-b.set);
+  if(!ms.length)return`<div class="jc-empty-msg">⏳ Aún no hay resultados para esta jornada</div>`;
+  const grupos=[...new Set(ms.map(m=>m.grupo))].sort((a,b)=>a-b);
+  return`<div style="padding:.5rem 0">`+grupos.map(g=>{
+    const gms=ms.filter(m=>m.grupo===g);
+    const gps=S.players.filter(p=>p.liga===lid&&p.grupo===g).sort((a,b)=>a.orden-b.orden);
+    return`<div class="grupo-block">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+        <div class="grupo-title">GRUPO ${g}</div>
+        <span style="font-size:.68rem;color:var(--muted2)">${gms[0]?.cancha||''} · ${gms[0]?.turno||''}</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.5rem">
+        ${gps.map(p=>`<span style="background:var(--card2);border:1px solid var(--border);border-radius:5px;padding:2px 8px;font-size:.75rem;font-weight:500">${p.nombre.split(' ')[0]}</span>`).join('')}
+      </div>
+      ${gms.map(m=>`<div style="display:flex;align-items:center;gap:.4rem;font-size:.75rem;padding:.3rem 0;border-top:1px solid var(--border)">
+        <span style="font-size:.6rem;color:var(--muted);min-width:32px">Set ${m.set}</span>
+        <span style="flex:1;text-align:right;color:var(--text)">${pFirst(m.a1)} / ${pFirst(m.a2)}</span>
+        <span style="color:var(--muted);font-size:.7rem;padding:0 4px">vs</span>
+        <span style="flex:1;color:var(--text)">${pFirst(m.b1)} / ${pFirst(m.b2)}</span>
+      </div>`).join('')}
+    </div>`;
+  }).join('')+'</div>';
 }
 
 function renderJornadaBody(jId,lid){
@@ -549,6 +587,71 @@ function renderJornadaBody(jId,lid){
       }).join('')}
     </div>`;
   }).join('');
+}
+
+// HORARIOS
+function showHorarioJornada(lid, jId){
+  showLT('horarios', document.querySelectorAll('.lt')[3]);
+  setTimeout(()=>renderHorariosSingle(lid, jId), 50);
+}
+
+function renderHorarios(lid){
+  const js=S.jornadas.filter(j=>j.liga===lid&&S.partidos.some(p=>p.jornadaId===j.id)).sort((a,b)=>b.num-a.num);
+  // Selector pills
+  const sel=document.getElementById('horarios-sel');
+  if(sel){
+    sel.innerHTML=js.map((j,i)=>`<button onclick="renderHorariosSingle('${lid}','${j.id}')" 
+      style="padding:.35rem .85rem;border-radius:20px;border:1px solid var(--border2);background:${i===0?'var(--accent)':'transparent'};color:${i===0?'var(--black)':'var(--muted2)'};font-family:'Outfit',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer"
+      id="hpill-${j.id}">J${j.num}</button>`).join('');
+  }
+  if(js.length) renderHorariosSingle(lid, js[0].id);
+}
+
+function renderHorariosSingle(lid, jId){
+  // Update pill styles
+  document.querySelectorAll('[id^="hpill-"]').forEach(p=>{
+    const active=p.id==='hpill-'+jId;
+    p.style.background=active?'var(--accent)':'transparent';
+    p.style.color=active?'var(--black)':'var(--muted2)';
+  });
+  const jornada=S.jornadas.find(j=>j.id===jId);
+  const ms=S.partidos.filter(p=>p.jornadaId===jId);
+  const ps=S.players.filter(p=>p.liga===lid);
+  const grupos=[...new Set(ms.map(m=>m.grupo))].sort((a,b)=>a-b);
+  const el=document.getElementById('horarios-content');
+  if(!el)return;
+
+  // Group by turno then by cancha (same format as printable)
+  const byGrupo={};
+  ms.forEach(m=>{if(!byGrupo[m.grupo])byGrupo[m.grupo]={turno:m.turno,cancha:m.cancha};});
+
+  el.innerHTML=`<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+    <div style="background:var(--card2);border-bottom:1px solid var(--border);padding:.85rem 1.1rem;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:2px">JORNADA ${jornada?.num||''}</div>
+        <div style="font-size:.72rem;color:var(--muted2)">${jornada?.fecha||'Fecha por confirmar'} · ${(jornada?.turnos||[]).join(' · ')}</div>
+      </div>
+    </div>
+    <div style="padding:.5rem 0">
+      <div style="display:grid;grid-template-columns:1fr auto auto;padding:.4rem 1.1rem;border-bottom:2px solid var(--border)">
+        <span style="font-size:.62rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase">Jugador</span>
+        <span style="font-size:.62rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;min-width:70px;text-align:center">Cancha</span>
+        <span style="font-size:.62rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;min-width:70px;text-align:right">Horario</span>
+      </div>
+      ${grupos.map(g=>{
+        const info=byGrupo[g]||{};
+        const gps=ps.filter(p=>p.grupo===g).sort((a,b)=>a.orden-b.orden).slice(0,4);
+        return gps.map((p,i)=>`<div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:.42rem 1.1rem;border-bottom:1px solid ${i===gps.length-1?'rgba(255,255,255,.06)':'var(--border)'};background:${i===0?'rgba(255,255,255,.01)':'transparent'}">
+          <div style="display:flex;align-items:center;gap:.5rem">
+            ${i===0?`<span style="background:var(--border2);color:var(--accent);font-family:'Bebas Neue',sans-serif;font-size:.8rem;padding:0 5px;border-radius:3px;min-width:24px;text-align:center">G${g}</span>`:'<span style="min-width:24px"></span>'}
+            <span style="font-size:.82rem;font-weight:${i===0?600:400}">${p.nombre}</span>
+          </div>
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:1rem;color:var(--text);min-width:70px;text-align:center">${i===0?info.cancha||'':''}</span>
+          <span style="font-size:.82rem;color:var(--accent);font-weight:600;min-width:70px;text-align:right">${i===0?info.turno||'':''}</span>
+        </div>`).join('');
+      }).join('')}
+    </div>
+  </div>`;
 }
 
 // PLAYER MODAL
