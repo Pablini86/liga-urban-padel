@@ -16,7 +16,8 @@
 <style>
 :root{--black:#080808;--dark:#111;--card:#161616;--card2:#1c1c1c;--border:#242424;--border2:#303030;--accent:#d4f000;--accent2:#ff3b5c;--accent3:#00e59e;--text:#efefef;--muted:#505050;--muted2:#888;--gold:#ffd700;--silver:#b8b8b8;--bronze:#cd7f32;}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-body{background:var(--black);color:var(--text);font-family:'Outfit',sans-serif;min-height:100vh;}
+body{background:var(--black);color:var(--text);font-family:'Outfit',sans-serif;min-height:100vh;position:relative;}
+main,nav,#mobile-bar{position:relative;z-index:1;}
 a{color:inherit;text-decoration:none;}
 
 /* NAV */
@@ -830,6 +831,22 @@ document.getElementById('player-modal').addEventListener('click',function(e){if(
 </div>
 <script async src="https://www.instagram.com/embed.js"></script>
 <script>
+// Parallax texture
+window.addEventListener('scroll', function(){
+  const el = document.querySelector('body::before');
+  // Use transform on a real element instead
+}, {passive:true});
+
+// Real parallax via JS on a div
+document.body.insertAdjacentHTML('afterbegin',
+  '<div id="tex" style="position:fixed;inset:-20%;background:url(texture.jpg) center/cover;opacity:.045;z-index:0;pointer-events:none;will-change:transform"></div>'
+);
+window.addEventListener('scroll', function(){
+  const y = window.scrollY;
+  const tex = document.getElementById('tex');
+  if(tex) tex.style.transform = 'translateY(' + (y * 0.08) + 'px)';
+}, {passive:true});
+
 if(window.innerWidth<=600){
   document.getElementById('mobile-bar').style.display='flex';
   document.querySelector('main').style.paddingBottom='70px';
