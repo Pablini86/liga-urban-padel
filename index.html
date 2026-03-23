@@ -224,7 +224,9 @@ td.tot{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;}
   </div>
 </div>
 
-<script>
+<script>const J1_HORARIOS = [{"grupo": 1, "turno": "19:15", "jugadores": ["Antonio Reynoso", "Gustavo Schraidt", "Daniel Gonzalez", "Rafael Pacheco"]}, {"grupo": 2, "turno": "18:00", "jugadores": ["Adolfo Schraidt", "Pepe Maldonado", "Rodrigo Arreola", "Gabriel Salles"]}, {"grupo": 3, "turno": "18:00", "jugadores": ["Eduardo González", "Ricardo Caballero", "Daniel Bojorquez", "Agustin Pacheco"]}, {"grupo": 4, "turno": "20:30", "jugadores": ["Diego Hernández", "Gustavo Sandoval", "Gerardo Schraidt", "Pablo Lemus"]}, {"grupo": 5, "turno": "19:15", "jugadores": ["Daniela Peregrina", "Francisco Torres", "Oscar Cancino", "Rubén Zepeda"]}, {"grupo": 6, "turno": "19:15", "jugadores": ["Erika Gutiérrez", "Alejandro Camarena", "Ricardo Garibay", "Carlos Luna Díaz"]}, {"grupo": 7, "turno": "19:15", "jugadores": ["Oscar Campos", "Emiliano Rivera", "Poncho Alarcon", "Martín Bojórquez"]}, {"grupo": 8, "turno": "18:00", "jugadores": ["Aldo Rosas", "Manolo Chávez", "Cesar Rubio", "Blanca Estela Nuño"]}, {"grupo": 9, "turno": "20:30", "jugadores": ["Alejandro Gómez", "Sebastian Guizar", "Juan Pablo Sandoval", "Daniel Muñoz"]}, {"grupo": 10, "turno": "18:00", "jugadores": ["Diego Lepe", "Alfredo Martinez", "Alan Vázquez", "Adrian Michel"]}, {"grupo": 11, "turno": "20:30", "jugadores": ["Leonel Lee", "Juan Pablo Sandoval", "Lupita Salcedo", "José Luis Lomeli"]}, {"grupo": 12, "turno": "18:00", "jugadores": ["Livier Rodríguez", "Jorge Villa", "Aldo Coronado", "Alma Preciado"]}, {"grupo": 13, "turno": "20:30", "jugadores": ["Mónica López Sainz", "Héctor Gutiérrez", "Alexis Popp", "Claudia Medina"]}, {"grupo": 14, "turno": "20:30", "jugadores": ["Erik Hernández", "Maria Rubio", "Rafa Pacheco Jr", "Cesar Medina"]}, {"grupo": 15, "turno": "20:30", "jugadores": ["Dhamara Castro", "Luis Carmona", "Regina Campos Levin", "Diego Ahumada"]}, {"grupo": 16, "turno": "18:00", "jugadores": ["Marco García", "Arturo Osuna", "Edgar Montaño Ramos", "Tomas Zertuche"]}, {"grupo": 17, "turno": "19:15", "jugadores": ["Santiago Lepe", "Georgina Hermosillo", "Luca Olivares", "Antonieta Rojas"]}, {"grupo": 18, "turno": "19:15", "jugadores": ["Antonio Avila", "Elisabeth Piccirillo", "Alexa Velázquez", "Zuzeth Jauregui"]}];
+
+
 firebase.initializeApp({
   apiKey:"AIzaSyChTCdBwFtsf7rTI4sKvTAGhb83VxdmIDs",
   authDomain:"liga-urban-padel.firebaseapp.com",
@@ -630,9 +632,38 @@ function renderHorariosSingle(lid, jId){
     p.style.color=active?'var(--black)':'var(--muted2)';
   });
   const jornada=S.jornadas.find(j=>j.id===jId);
-  const ms=S.partidos.filter(p=>p.jornadaId===jId);
   const el=document.getElementById('horarios-content');
   if(!el)return;
+
+  // J1: use hardcoded data from PDF since migration used generic IDs
+  if(jornada && jornada.num===1){
+    el.innerHTML='<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">'+
+      '<div style="background:var(--card2);border-bottom:1px solid var(--border);padding:.85rem 1.1rem">'+
+        '<div style="font-family:Bebas Neue,sans-serif;font-size:1.4rem;letter-spacing:2px">JORNADA 1</div>'+
+        '<div style="font-size:.72rem;color:var(--muted2)">2026-03-11 · 18:00 · 19:15 · 20:30</div>'+
+      '</div>'+
+      '<div style="padding:.5rem 0">'+
+        '<div style="display:grid;grid-template-columns:1fr auto;padding:.4rem 1.1rem;border-bottom:2px solid var(--border)">'+
+          '<span style="font-size:.62rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase">Jugador</span>'+
+          '<span style="font-size:.62rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;min-width:70px;text-align:right">Horario</span>'+
+        '</div>'+
+        J1_HORARIOS.map(({grupo,turno,jugadores})=>
+          jugadores.map((nombre,i)=>
+            '<div style="display:grid;grid-template-columns:1fr auto;align-items:center;padding:.42rem 1.1rem;border-bottom:1px solid '+(i===jugadores.length-1?'rgba(255,255,255,.06)':'var(--border)')+'">'+
+              '<div style="display:flex;align-items:center;gap:.5rem">'+
+                (i===0?'<span style="background:var(--border2);color:var(--accent);font-family:Bebas Neue,sans-serif;font-size:.8rem;padding:0 5px;border-radius:3px;min-width:24px;text-align:center">G'+grupo+'</span>':'<span style="min-width:24px"></span>')+
+                '<span style="font-size:.82rem;font-weight:'+(i===0?600:400)+'">'+nombre+'</span>'+
+              '</div>'+
+              '<span style="font-size:.82rem;color:var(--accent);font-weight:600;min-width:70px;text-align:right">'+(i===0?turno:'')+'</span>'+
+            '</div>'
+          ).join('')
+        ).join('')+
+      '</div>'+
+    '</div>';
+    return;
+  }
+
+  const ms=S.partidos.filter(p=>p.jornadaId===jId);
 
   // Build group info from matches: who played in each group THIS jornada
   const byGrupo={};
