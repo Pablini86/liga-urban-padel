@@ -640,28 +640,34 @@ function renderHorariosSingle(lid, jId){
   const byGrupo={};
   ms.forEach(m=>{if(!byGrupo[m.grupo])byGrupo[m.grupo]={turno:m.turno,cancha:m.cancha};});
 
+  // Sort grupos by turno then by grupo number
+  const turnoOrder={'18:00':0,'19:15':1,'20:30':2,'21:45':3};
+  const gruposSorted=[...grupos].sort((a,b)=>{
+    const tA=byGrupo[a]?.turno||'';
+    const tB=byGrupo[b]?.turno||'';
+    const tOrdA=turnoOrder[tA]!==undefined?turnoOrder[tA]:parseInt(tA)||99;
+    const tOrdB=turnoOrder[tB]!==undefined?turnoOrder[tB]:parseInt(tB)||99;
+    return tOrdA!==tOrdB?tOrdA-tOrdB:a-b;
+  });
+
   el.innerHTML=`<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-    <div style="background:var(--card2);border-bottom:1px solid var(--border);padding:.85rem 1.1rem;display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:2px">JORNADA ${jornada?.num||''}</div>
-        <div style="font-size:.72rem;color:var(--muted2)">${jornada?.fecha||'Fecha por confirmar'} · ${(jornada?.turnos||[]).join(' · ')}</div>
-      </div>
+    <div style="background:var(--card2);border-bottom:1px solid var(--border);padding:.85rem 1.1rem">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:2px">JORNADA ${jornada?.num||''}</div>
+      <div style="font-size:.72rem;color:var(--muted2)">${jornada?.fecha||'Fecha por confirmar'} · ${(jornada?.turnos||[]).join(' · ')}</div>
     </div>
     <div style="padding:.5rem 0">
-      <div style="display:grid;grid-template-columns:1fr auto auto;padding:.4rem 1.1rem;border-bottom:2px solid var(--border)">
+      <div style="display:grid;grid-template-columns:1fr auto;padding:.4rem 1.1rem;border-bottom:2px solid var(--border)">
         <span style="font-size:.62rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase">Jugador</span>
-        <span style="font-size:.62rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;min-width:70px;text-align:center">Cancha</span>
         <span style="font-size:.62rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;min-width:70px;text-align:right">Horario</span>
       </div>
-      ${grupos.map(g=>{
+      ${gruposSorted.map(g=>{
         const info=byGrupo[g]||{};
         const gps=ps.filter(p=>p.grupo===g).sort((a,b)=>a.orden-b.orden).slice(0,4);
-        return gps.map((p,i)=>`<div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:.42rem 1.1rem;border-bottom:1px solid ${i===gps.length-1?'rgba(255,255,255,.06)':'var(--border)'};background:${i===0?'rgba(255,255,255,.01)':'transparent'}">
+        return gps.map((p,i)=>`<div style="display:grid;grid-template-columns:1fr auto;align-items:center;padding:.42rem 1.1rem;border-bottom:1px solid ${i===gps.length-1?'rgba(255,255,255,.06)':'var(--border)'};background:${i===0?'rgba(255,255,255,.015)':'transparent'}">
           <div style="display:flex;align-items:center;gap:.5rem">
             ${i===0?`<span style="background:var(--border2);color:var(--accent);font-family:'Bebas Neue',sans-serif;font-size:.8rem;padding:0 5px;border-radius:3px;min-width:24px;text-align:center">G${g}</span>`:'<span style="min-width:24px"></span>'}
             <span style="font-size:.82rem;font-weight:${i===0?600:400}">${p.nombre}</span>
           </div>
-          <span style="font-family:'Bebas Neue',sans-serif;font-size:1rem;color:var(--text);min-width:70px;text-align:center">${i===0?info.cancha||'':''}</span>
           <span style="font-size:.82rem;color:var(--accent);font-weight:600;min-width:70px;text-align:right">${i===0?info.turno||'':''}</span>
         </div>`).join('');
       }).join('')}
