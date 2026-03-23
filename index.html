@@ -312,8 +312,12 @@ function renderHome(){
     const ps=S.players.filter(p=>p.liga===l.id).length;
     const js=S.jornadas.filter(j=>j.liga===l.id);
     // Find current jornada (last one with matches)
-    const jornadasConPartidos=js.filter(j=>S.partidos.some(p=>p.jornadaId===j.id));
-    const currentJ=jornadasConPartidos.length?Math.max(...jornadasConPartidos.map(j=>j.num)):0;
+    // Only count jornadas where ALL matches are finalized
+    const jornadasCompletas=js.filter(j=>{
+      const ms=S.partidos.filter(p=>p.jornadaId===j.id);
+      return ms.length>0&&ms.every(m=>m.finalizado&&m.gA!==null);
+    });
+    const currentJ=jornadasCompletas.length?Math.max(...jornadasCompletas.map(j=>j.num)):0;
     const nextJ=js.find(j=>{
       const ms=S.partidos.filter(p=>p.jornadaId===j.id);
       return ms.length>0&&!ms.some(m=>m.finalizado&&m.gA!==null);
@@ -327,7 +331,7 @@ function renderHome(){
         <span class="lc-tag">${ps} jugadores</span>
         <span class="lc-tag" style="background:rgba(0,229,158,.08);color:var(--accent3);border-color:rgba(0,229,158,.2)">${jornada_label}</span>
       </div>
-      <div style="font-size:.68rem;color:var(--muted2)">${currentJ}/${l.nj||6} jornadas completadas</div>
+      <div style="font-size:.68rem;color:var(--muted2)">${jornadasCompletas.length}/${l.nj||6} jornadas completadas</div>
       <div class="lc-arrow">→</div>
     </div>`;
   }).join('');
@@ -382,7 +386,7 @@ function renderInicio(lid){
           <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:2px">JORNADA ${nextJ.num}</div>
           <div style="font-size:.75rem;color:var(--muted2)">${nextJ.fecha||'Fecha por confirmar'}</div>
         </div>
-        <button onclick="showLT('jornadas',document.querySelectorAll('.lt')[2])" style="padding:.4rem .85rem;border-radius:7px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-family:'Outfit',sans-serif;font-size:.75rem;font-weight:600;cursor:pointer">Ver horarios →</button>
+        <button onclick="showHorarioJornada('${lid}','${nextJ.id}')" style="padding:.4rem .85rem;border-radius:7px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-family:'Outfit',sans-serif;font-size:.75rem;font-weight:600;cursor:pointer">Ver horarios →</button>
       </div>
       ${turnos.map(t=>`<div style="margin-bottom:.55rem">
         <div style="font-size:.65rem;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:.3rem">${t}</div>
@@ -591,13 +595,24 @@ function renderJornadaBody(jId,lid){
 
 // HORARIOS
 function showHorarioJornada(lid, jId){
-  showLT('horarios', document.querySelectorAll('.lt')[3]);
+  _horariosLid=lid;
+  const btn=document.querySelector('.lt[onclick*="horarios"]');
+  showLT('horarios', btn);
+  // Build pills first
+  const js=S.jornadas.filter(j=>j.liga===lid&&S.partidos.some(p=>p.jornadaId===j.id)).sort((a,b)=>b.num-a.num);
+  const sel=document.getElementById('horarios-sel');
+  if(sel){
+    sel.innerHTML=js.map(j=>`<button onclick="renderHorariosSingle('${lid}','${j.id}')" 
+      style="padding:.35rem .85rem;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--muted2);font-family:'Outfit',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer"
+      id="hpill-${j.id}">J${j.num}</button>`).join('');
+  }
   setTimeout(()=>renderHorariosSingle(lid, jId), 50);
 }
 
+let _horariosLid=null;
 function renderHorarios(lid){
+  _horariosLid=lid;
   const js=S.jornadas.filter(j=>j.liga===lid&&S.partidos.some(p=>p.jornadaId===j.id)).sort((a,b)=>b.num-a.num);
-  // Selector pills
   const sel=document.getElementById('horarios-sel');
   if(sel){
     sel.innerHTML=js.map((j,i)=>`<button onclick="renderHorariosSingle('${lid}','${j.id}')" 
