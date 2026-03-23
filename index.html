@@ -884,14 +884,7 @@ window.addEventListener('scroll', function(){
   // Draw initial grain
   drawGrain();
 
-  // Animate grain every 3 frames for subtle movement
-  let frame = 0;
-  function animate(){
-    frame++;
-    if(frame % 4 === 0) drawGrain();
-    requestAnimationFrame(animate);
-  }
-  animate();
+  // Static - no animation
 
   // Parallax on scroll
   window.addEventListener('scroll', function(){
