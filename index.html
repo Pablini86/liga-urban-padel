@@ -686,102 +686,100 @@ function renderHorarios(lid){
 }
 
 function renderHorariosSingle(lid, jId){
-  // Update pill styles
-  // Wire search input after render
-  setTimeout(()=>{
-    const inp=document.getElementById('h-search-j1')||document.getElementById('h-search-'+jId);
-    if(inp) inp.addEventListener('input',function(){filterHorarios(this.id);});
-  },50);
   document.querySelectorAll('[id^="hpill-"]').forEach(p=>{
-    const active=p.id==='hpill-'+jId;
-    p.style.background=active?'var(--accent)':'transparent';
-    p.style.color=active?'var(--black)':'var(--muted2)';
+    const active = p.id === 'hpill-' + jId;
+    p.style.background = active ? 'var(--accent)' : 'transparent';
+    p.style.color = active ? 'var(--black)' : 'var(--muted2)';
   });
-  const jornada=S.jornadas.find(j=>j.id===jId);
-  const el=document.getElementById('horarios-content');
-  if(!el)return;
 
-  // J1: use hardcoded data from PDF since migration used generic IDs
-  if(jornada && jornada.num===1){
-    el.innerHTML=
-      '<input id="h-search-j1" type="text" placeholder="Busca tu nombre..." style="width:100%;padding:.65rem 1rem;border-radius:9px;border:1px solid var(--border2);background:var(--card2);color:var(--text);font-family:Outfit,sans-serif;font-size:.88rem;outline:none;box-sizing:border-box;margin-bottom:.85rem">'+
-      '<div id="horarios-rows-j1">'+
-      J1_HORARIOS.map(({grupo,turno,jugadores})=>
-        '<div class="h-grupo" style="background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:.55rem;overflow:hidden">'+
-          '<div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem 1rem;background:var(--card2);border-bottom:1px solid var(--border)">'+
-            '<span style="background:var(--accent);color:var(--black);font-family:Bebas Neue,sans-serif;font-size:1rem;padding:1px 8px;border-radius:5px;font-weight:700">G'+grupo+'</span>'+
-            '<span style="font-family:Bebas Neue,sans-serif;font-size:1.15rem;color:var(--accent);letter-spacing:1px">'+turno+'</span>'+
-          '</div>'+
-          jugadores.map((nombre,i)=>
-            '<div class="h-row" data-name="'+nombre.toLowerCase()+'" style="display:flex;align-items:center;gap:.75rem;padding:.6rem 1rem;border-bottom:1px solid '+(i===jugadores.length-1?'transparent':'var(--border)')+'">'+
-              '<div style="width:28px;height:28px;border-radius:50%;background:var(--border2);display:flex;align-items:center;justify-content:center;font-family:Bebas Neue,sans-serif;font-size:.85rem;color:var(--accent);flex-shrink:0">'+nombre[0]+'</div>'+
-              '<span style="font-size:.9rem;font-weight:'+(i===0?600:400)+'">'+nombre+'</span>'+
-            '</div>'
-          ).join('')+
-        '</div>'
-      ).join('')+
-      '</div>';
+  // Wire search after 50ms
+  setTimeout(()=>{
+    const inp = document.getElementById('hs-' + jId);
+    if(inp) inp.addEventListener('input', function(){
+      const q = this.value.toLowerCase().trim();
+      document.querySelectorAll('.h-grupo').forEach(g=>{
+        let show = false;
+        g.querySelectorAll('.h-row').forEach(r=>{
+          const match = !q || r.dataset.name.includes(q);
+          r.style.display = match ? 'flex' : 'none';
+          if(match) show = true;
+        });
+        g.style.display = show ? 'block' : 'none';
+      });
+    });
+  }, 50);
+
+  const jornada = S.jornadas.find(j => j.id === jId);
+  const el = document.getElementById('horarios-content');
+  if(!el) return;
+
+  // J1: hardcoded from PDF
+  if(jornada && jornada.num === 1){
+    renderHorariosGrid(el, jId, 'JORNADA 1', '2026-03-11', ['18:00','19:15','20:30'],
+      J1_HORARIOS.map(({grupo, turno, jugadores}) => ({
+        grupo, turno,
+        players: jugadores.map(n => ({nombre: n, inicial: n[0]}))
+      }))
+    );
     return;
   }
 
-  const ms=S.partidos.filter(p=>p.jornadaId===jId);
-
-  // Build group info from matches: who played in each group THIS jornada
-  const byGrupo={};
-  ms.forEach(m=>{
-    if(!byGrupo[m.grupo]) byGrupo[m.grupo]={turno:m.turno,cancha:m.cancha,pids:new Set()};
-    [m.a1,m.a2,m.b1,m.b2].forEach(pid=>byGrupo[m.grupo].pids.add(pid));
+  const ms = S.partidos.filter(p => p.jornadaId === jId);
+  const byGrupo = {};
+  ms.forEach(m => {
+    if(!byGrupo[m.grupo]) byGrupo[m.grupo] = {turno: m.turno, pids: new Set()};
+    [m.a1, m.a2, m.b1, m.b2].forEach(pid => byGrupo[m.grupo].pids.add(pid));
   });
+  const grupos = Object.keys(byGrupo).map(Number).sort((a,b) => a-b);
+  renderHorariosGrid(el, jId,
+    'JORNADA ' + (jornada?.num||''),
+    jornada?.fecha || 'Fecha por confirmar',
+    jornada?.turnos || [],
+    grupos.map(g => ({
+      grupo: g,
+      turno: byGrupo[g].turno,
+      players: [...byGrupo[g].pids]
+        .map(pid => S.players.find(p => p.id === pid))
+        .filter(Boolean)
+        .sort((a,b) => a.orden - b.orden)
+        .map(p => ({nombre: p.nombre, inicial: p.nombre[0]}))
+    }))
+  );
+}
 
-  // Sort groups G1 → G18
-  const grupos=Object.keys(byGrupo).map(Number).sort((a,b)=>a-b);
+function renderHorariosGrid(el, jId, title, fecha, turnos, grupos){
+  let html = '<input id="hs-' + jId + '" type="text" placeholder="Busca tu nombre..." ' +
+    'style="width:100%;padding:.65rem 1rem;border-radius:9px;border:1px solid var(--border2);' +
+    'background:var(--card2);color:var(--text);font-size:.88rem;outline:none;' +
+    'box-sizing:border-box;margin-bottom:.85rem;font-family:inherit">';
 
-  // Render with search
-  const searchId='h-search-'+jId;
-  el.innerHTML=
-    '<div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.85rem">'+
-      '<div style="position:relative;flex:1">'+
-        '<input id="'+searchId+'" type="text" placeholder="🔍  ¿A qué hora juego? Busca tu nombre..." '+
-          'oninput="filterHorarios(''+searchId+'')" '+
-          'style="width:100%;padding:.65rem 1rem;border-radius:9px;border:1px solid var(--border2);background:var(--card2);color:var(--text);font-family:'Outfit',sans-serif;font-size:.88rem;outline:none;box-sizing:border-box">'+
-      '</div>'+
-    '</div>'+
-    '<div id="horarios-rows-'+jId+'">'+
-    grupos.map((g,gi)=>{
-      const info=byGrupo[g];
-      const pids=[...info.pids];
-      const gps=pids.map(pid=>S.players.find(p=>p.id===pid)).filter(Boolean).sort((a,b)=>a.orden-b.orden);
-      return '<div class="h-grupo" style="background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:.55rem;overflow:hidden">'+
-        '<div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem 1rem;background:var(--card2);border-bottom:1px solid var(--border)">'+
-          '<div style="display:flex;align-items:center;gap:.6rem">'+
-            '<span style="background:var(--accent);color:var(--black);font-family:Bebas Neue,sans-serif;font-size:1rem;padding:1px 8px;border-radius:5px;font-weight:700">G'+g+'</span>'+
-          '</div>'+
-          '<span style="font-family:Bebas Neue,sans-serif;font-size:1.15rem;color:var(--accent);letter-spacing:1px">'+info.turno+'</span>'+
-        '</div>'+
-        gps.map((p,i)=>
-          '<div class="h-row" data-name="'+p.nombre.toLowerCase()+'" style="display:flex;align-items:center;gap:.75rem;padding:.6rem 1rem;border-bottom:1px solid '+(i===gps.length-1?'transparent':'var(--border)')+'">'+
-            '<div style="width:28px;height:28px;border-radius:50%;background:var(--border2);display:flex;align-items:center;justify-content:center;font-family:Bebas Neue,sans-serif;font-size:.85rem;color:var(--accent);flex-shrink:0">'+p.nombre[0]+'</div>'+
-            '<span style="font-size:.9rem;font-weight:'+(i===0?600:400)+'">'+p.nombre+'</span>'+
-          '</div>'
-        ).join('')+
-      '</div>';
-    }).join('')+
-    '</div>';
+  grupos.forEach(({grupo, turno, players}) => {
+    html += '<div class="h-grupo" style="background:var(--card);border:1px solid var(--border);' +
+      'border-radius:12px;margin-bottom:.55rem;overflow:hidden">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;' +
+      'padding:.6rem 1rem;background:var(--card2);border-bottom:1px solid var(--border)">' +
+      '<span style="background:var(--accent);color:var(--black);font-family:Bebas Neue,sans-serif;' +
+      'font-size:1rem;padding:1px 8px;border-radius:5px;font-weight:700">G' + grupo + '</span>' +
+      '<span style="font-family:Bebas Neue,sans-serif;font-size:1.15rem;color:var(--accent);' +
+      'letter-spacing:1px">' + turno + '</span></div>';
+
+    players.forEach((p, i) => {
+      html += '<div class="h-row" data-name="' + p.nombre.toLowerCase() + '" ' +
+        'style="display:flex;align-items:center;gap:.75rem;padding:.6rem 1rem;' +
+        'border-bottom:1px solid ' + (i === players.length-1 ? 'transparent' : 'var(--border)') + '">' +
+        '<div style="width:28px;height:28px;border-radius:50%;background:var(--border2);' +
+        'display:flex;align-items:center;justify-content:center;font-family:Bebas Neue,sans-serif;' +
+        'font-size:.85rem;color:var(--accent);flex-shrink:0">' + p.inicial + '</div>' +
+        '<span style="font-size:.9rem;font-weight:' + (i===0?600:400) + '">' + p.nombre + '</span>' +
+        '</div>';
+    });
+    html += '</div>';
+  });
+  el.innerHTML = html;
 }
 
 function filterHorarios(searchId){
-  const q=document.getElementById(searchId)?.value.toLowerCase().trim()||'';
-  document.querySelectorAll('.h-grupo').forEach(grupo=>{
-    const rows=grupo.querySelectorAll('.h-row');
-    let groupMatch=false;
-    rows.forEach(row=>{
-      const name=row.dataset.name||'';
-      const match=!q||name.includes(q);
-      row.style.display=match?'flex':'none';
-      if(match)groupMatch=true;
-    });
-    grupo.style.display=groupMatch?'block':'none';
-  });
+  // handled by event listener in renderHorariosSingle
 }
 
 // PLAYER MODAL
