@@ -323,6 +323,17 @@ function calcPts(pid,lid,jid){
   ms.forEach(m=>{const enA=[m.a1,m.a2].includes(pid);gf+=enA?m.gA:m.gB;gc+=enA?m.gB:m.gA;});
   return gf-gc;
 }
+function calcPosGrupo(pid,lid,jid){
+  // Returns position (1-4) of player in their group for this jornada
+  const ms=S.partidos.filter(m=>m.jornadaId===jid);
+  const myMatch=ms.find(m=>[m.a1,m.a2,m.b1,m.b2].includes(pid));
+  if(!myMatch)return null;
+  const g=myMatch.grupo;
+  const pids=[...new Set(ms.filter(m=>m.grupo===g).flatMap(m=>[m.a1,m.a2,m.b1,m.b2]))];
+  const ranked=pids.map(id=>({id,pts:calcPts(id,lid,jid)??-99}))
+    .sort((a,b)=>b.pts-a.pts);
+  return ranked.findIndex(x=>x.id===pid)+1;
+}
 function calcTotal(pid,lid){
   return S.jornadas.filter(j=>j.liga===lid).reduce((acc,j)=>{const p=calcPts(pid,lid,j.id);return p!==null?acc+p:acc;},0);
 }
@@ -631,6 +642,10 @@ function renderJornadaBody(jId,lid){
   const grupos=[...new Set(ms.map(m=>m.grupo))].sort((a,b)=>a-b);
   return grupos.map(g=>{
     const gms=ms.filter(m=>m.grupo===g);
+    const pids=[...new Set(gms.flatMap(m=>[m.a1,m.a2,m.b1,m.b2]))];
+    const ranked=pids.map(id=>({id,pts:calcPts(id,lid,jId)??-99,nombre:pById(id)?.nombre||'?'}))
+      .sort((a,b)=>b.pts-a.pts);
+    const posColors=['var(--gold)','var(--silver)','var(--bronze)','var(--muted2)'];
     return`<div class="grupo-block">
       <div class="grupo-title">GRUPO ${g} · ${gms[0]?.cancha||''} · ${gms[0]?.turno||''}</div>
       ${gms.map(m=>{
@@ -652,6 +667,14 @@ function renderJornadaBody(jId,lid){
           </div>
         </div>`;
       }).join('')}
+      <div style="border-top:1px solid var(--border);margin-top:.5rem;padding-top:.5rem">
+        <div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:.35rem">Posición en grupo</div>
+        ${ranked.map((r,i)=>`<div style="display:flex;align-items:center;gap:.55rem;padding:.22rem 0;font-size:.8rem">
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:1rem;color:${posColors[i]||'var(--muted2)'};min-width:18px">${i+1}</span>
+          <span style="flex:1;font-weight:${i===0?600:400}">${r.nombre.split(' ')[0]} ${r.nombre.split(' ')[1]||''}</span>
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:${r.pts>=0?'var(--accent)':'var(--accent2)'}">${r.pts>0?'+':''}${r.pts}</span>
+        </div>`).join('')}
+      </div>
     </div>`;
   }).join('');
 }
