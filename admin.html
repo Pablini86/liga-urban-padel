@@ -436,7 +436,7 @@ function doLogin(){
 function showApp(email){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app-screen').style.display='block';
-  document.getElementById('user-email').textContent=email;
+  const ue=document.getElementById('user-email');if(ue)ue.textContent=email;
   if(window.innerWidth<=760){
     const mn=document.getElementById('mob-nav');
     if(mn){mn.style.display='block';document.querySelector('main').style.paddingBottom='80px';}
