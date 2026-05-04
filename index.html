@@ -15,7 +15,7 @@
 <meta name="description" content="Liga Americana de Pádel · Urban Padel Life Las Rosas · Guadalajara">
 <meta property="og:title" content="Urban Padel Life · Liga Americana">
 <meta property="og:description" content="Tabla general, resultados y horarios de la Liga Americana de Pádel">
-<meta property="og:image" content="https://liga-urban-padel.vercel.app/og-image.png">
+<meta property="og:image" content="logo.png">
 <link rel="icon" type="image/png" href="favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script><!-- v3 -->
@@ -323,17 +323,6 @@ function calcPts(pid,lid,jid){
   ms.forEach(m=>{const enA=[m.a1,m.a2].includes(pid);gf+=enA?m.gA:m.gB;gc+=enA?m.gB:m.gA;});
   return gf-gc;
 }
-function calcPosGrupo(pid,lid,jid){
-  // Returns position (1-4) of player in their group for this jornada
-  const ms=S.partidos.filter(m=>m.jornadaId===jid);
-  const myMatch=ms.find(m=>[m.a1,m.a2,m.b1,m.b2].includes(pid));
-  if(!myMatch)return null;
-  const g=myMatch.grupo;
-  const pids=[...new Set(ms.filter(m=>m.grupo===g).flatMap(m=>[m.a1,m.a2,m.b1,m.b2]))];
-  const ranked=pids.map(id=>({id,pts:calcPts(id,lid,jid)??-99}))
-    .sort((a,b)=>b.pts-a.pts);
-  return ranked.findIndex(x=>x.id===pid)+1;
-}
 function calcTotal(pid,lid){
   return S.jornadas.filter(j=>j.liga===lid).reduce((acc,j)=>{const p=calcPts(pid,lid,j.id);return p!==null?acc+p:acc;},0);
 }
@@ -382,11 +371,12 @@ function renderHome(){
     el.innerHTML='<div class="empty-state"><div>🎾</div><p>Sin ligas activas</p></div>';
     return;
   }
-  el.innerHTML=S.ligas.filter(l=>l.status!=='archivada').map(l=>{
+  const activas=S.ligas.filter(l=>l.status!=='archivada');
+  const archivadas=S.ligas.filter(l=>l.status==='archivada');
+
+  const cardActiva=l=>{
     const ps=S.players.filter(p=>p.liga===l.id).length;
     const js=S.jornadas.filter(j=>j.liga===l.id);
-    // Find current jornada (last one with matches)
-    // Only count jornadas where ALL matches are finalized
     const jornadasCompletas=js.filter(j=>{
       const ms=S.partidos.filter(p=>p.jornadaId===j.id);
       return ms.length>0&&ms.every(m=>m.finalizado&&m.gA!==null);
@@ -408,7 +398,39 @@ function renderHome(){
       <div style="font-size:.68rem;color:var(--muted2)">${jornadasCompletas.length}/${l.nj||6} jornadas completadas</div>
       <div class="lc-arrow">→</div>
     </div>`;
-  }).join('');
+  };
+
+  const cardArchivada=l=>{
+    const global=calcGlobal(l.id);
+    const top3=global.slice(0,3);
+    const medals=['🥇','🥈','🥉'];
+    return`<div class="league-card" onclick="openLiga('${l.id}')" style="border-color:rgba(255,215,0,.2);opacity:.85">
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.65rem">
+        <span style="font-size:.65rem;font-weight:700;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase">Finalizada</span>
+        ${l.fechaCierre?`<span style="font-size:.65rem;color:var(--muted2)">${l.fechaCierre}</span>`:''}
+      </div>
+      <div class="lc-name" style="font-size:1.4rem">${l.nombre}</div>
+      <div class="lc-dia">${l.dia||''} · ${l.cat||'Mixta'}</div>
+      <div style="margin-top:.65rem;background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.15);border-radius:7px;padding:.6rem .75rem">
+        <div style="font-size:.58rem;font-weight:700;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:.4rem">Podio</div>
+        ${top3.map((x,i)=>`<div style="display:flex;align-items:center;gap:.5rem;padding:.2rem 0;font-size:.8rem">
+          <span>${medals[i]}</span>
+          <span style="flex:1;font-weight:${i===0?700:400}">${x.player.nombre}</span>
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:1rem;color:${x.total>=0?'var(--accent)':'var(--accent2)'}">${x.total>0?'+':''}${x.total}</span>
+        </div>`).join('')}
+      </div>
+      <div class="lc-arrow" style="color:var(--muted2)">→</div>
+    </div>`;
+  };
+
+  let html='';
+  if(activas.length) html+=activas.map(cardActiva).join('');
+  if(archivadas.length){
+    if(activas.length) html+=`<div style="font-size:.63rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin:1.5rem 0 .65rem;grid-column:1/-1">Ligas anteriores</div>`;
+    html+=archivadas.map(cardArchivada).join('');
+  }
+  if(!activas.length&&!archivadas.length) html='<div class="empty-state"><div>🎾</div><p>Sin ligas activas</p></div>';
+  el.innerHTML=html;
 }
 
 // LIGA
@@ -642,10 +664,6 @@ function renderJornadaBody(jId,lid){
   const grupos=[...new Set(ms.map(m=>m.grupo))].sort((a,b)=>a-b);
   return grupos.map(g=>{
     const gms=ms.filter(m=>m.grupo===g);
-    const pids=[...new Set(gms.flatMap(m=>[m.a1,m.a2,m.b1,m.b2]))];
-    const ranked=pids.map(id=>({id,pts:calcPts(id,lid,jId)??-99,nombre:pById(id)?.nombre||'?'}))
-      .sort((a,b)=>b.pts-a.pts);
-    const posColors=['var(--gold)','var(--silver)','var(--bronze)','var(--muted2)'];
     return`<div class="grupo-block">
       <div class="grupo-title">GRUPO ${g} · ${gms[0]?.cancha||''} · ${gms[0]?.turno||''}</div>
       ${gms.map(m=>{
@@ -667,14 +685,6 @@ function renderJornadaBody(jId,lid){
           </div>
         </div>`;
       }).join('')}
-      <div style="border-top:1px solid var(--border);margin-top:.5rem;padding-top:.5rem">
-        <div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:.35rem">Posición en grupo</div>
-        ${ranked.map((r,i)=>`<div style="display:flex;align-items:center;gap:.55rem;padding:.22rem 0;font-size:.8rem">
-          <span style="font-family:'Bebas Neue',sans-serif;font-size:1rem;color:${posColors[i]||'var(--muted2)'};min-width:18px">${i+1}</span>
-          <span style="flex:1;font-weight:${i===0?600:400}">${r.nombre.split(' ')[0]} ${r.nombre.split(' ')[1]||''}</span>
-          <span style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:${r.pts>=0?'var(--accent)':'var(--accent2)'}">${r.pts>0?'+':''}${r.pts}</span>
-        </div>`).join('')}
-      </div>
     </div>`;
   }).join('');
 }
@@ -814,11 +824,13 @@ function openPlayer(pid,lid){
   const st=calcGlobal(lid);
   const rank=st.findIndex(x=>x.player.id===pid)+1;
 
+  const ligaName=S.ligas.find(l=>l.id===lid)?.nombre||'';
   document.getElementById('modal-content').innerHTML=`
     <h2>${p.nombre.split(' ')[0]} <em>${p.nombre.split(' ').slice(1).join(' ')}</em></h2>
     <div style="display:flex;gap:.65rem;flex-wrap:wrap;margin-bottom:1.1rem">
       <span style="font-size:.75rem;color:var(--muted2)">Grupo ${p.grupo} · ${p.cat||''}</span>
       <span style="font-size:.75rem;color:var(--accent);font-weight:700">#${rank} en tabla</span>
+      ${ligaName?`<span style="font-size:.72rem;color:var(--muted2)">${ligaName}</span>`:''}
     </div>
     <div style="display:flex;gap:.65rem;margin-bottom:1.2rem">
       <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.75rem;text-align:center">
