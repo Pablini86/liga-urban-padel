@@ -464,7 +464,7 @@ let _id=Date.now(); const uid=()=>(++_id).toString(36);
 
 // ═══ FIRESTORE LISTENERS ═══
 function initListeners(){
-  db.collection('ligas').onSnapshot(s=>{S.ligas=s.docs.map(d=>({id:d.id,...d.data()}));if(!S.activeLiga){const activa=S.ligas.find(l=>l.status!=='archivada')||S.ligas[0];if(activa)S.activeLiga=activa.id;}checkMigrate();renderAdmin();});
+  db.collection('ligas').onSnapshot(s=>{S.ligas=s.docs.map(d=>({id:d.id,...d.data()}));checkMigrate();renderAdmin();});
   db.collection('players').onSnapshot(s=>{S.players=s.docs.map(d=>({id:d.id,...d.data()}));renderAdmin();});
   db.collection('partidos').onSnapshot(s=>{S.partidos=s.docs.map(d=>({id:d.id,...d.data()}));renderAdmin();});
   db.collection('jornadas').onSnapshot(s=>{S.jornadas=s.docs.map(d=>({id:d.id,...d.data()}));renderAdmin();});
@@ -539,8 +539,6 @@ async function fsBatch(ops){const b=db.batch();ops.forEach(({op,col,id,data})=>{
 
 // ═══ ADMIN UI ═══
 function renderAdmin(){
-  // Keep activeLiga in sync
-  if(!S.activeLiga&&S.ligas.length) S.activeLiga=S.ligas[0].id;
   renderLigasAdmin();
   if(S.activeLiga){
     renderPlist();renderDrag();populateSels();renderCaptura();renderPromoP();renderImpPrev();renderScheduleGrid();
