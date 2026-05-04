@@ -200,7 +200,7 @@ select option{background:var(--dark);}
       <button class="btn bp bsm" id="migrate-btn">☁️ Subir a Firebase</button>
     </div>
 
-    <div class="itabs">
+    <div class="itabs" id="main-tabs" style="display:none">
       <button class="it active" onclick="showAT('ligas',this)">🏟️ Ligas</button>
       <button class="it" onclick="showAT('jugadores',this)">👤 Jugadores</button>
       <button class="it" onclick="showAT('jornada',this)">🕐 Horarios</button>
@@ -549,6 +549,7 @@ function showAT(id,btn){document.querySelectorAll('[id^="at-"]').forEach(e=>e.st
 function renderLigasAdmin(){
   const el=document.getElementById('ligas-list');
   if(!el)return;
+  if(!S.ligas.length){el.innerHTML='<p style="color:var(--muted2);font-size:.78rem">Cargando ligas...</p>';return;}
   const activas=S.ligas.filter(l=>l.status!=='archivada');
   const archivadas=S.ligas.filter(l=>l.status==='archivada');
 
@@ -597,6 +598,9 @@ function entrarLiga(lid){
   if(sub)sub.textContent=liga?.nombre||'';
   const navEl=document.getElementById('nav-liga-active');
   if(navEl)navEl.textContent=liga?.nombre||'';
+  // Show tabs
+  const tabs=document.getElementById('main-tabs');
+  if(tabs)tabs.style.display='';
   // Go to resultados tab
   const btn=document.querySelector('.it[onclick*="resultados"]');
   if(btn)showAT('resultados',btn);
@@ -604,6 +608,13 @@ function entrarLiga(lid){
 }
 
 function volverALigas(){
+  S.activeLiga=null;
+  const tabs=document.getElementById('main-tabs');
+  if(tabs)tabs.style.display='none';
+  const sub=document.getElementById('admin-sub');
+  if(sub)sub.textContent='Selecciona una liga para comenzar';
+  const navEl=document.getElementById('nav-liga-active');
+  if(navEl)navEl.textContent='';
   const btn=document.querySelector('.it[onclick*="ligas"]');
   if(btn)showAT('ligas',btn);
 }
