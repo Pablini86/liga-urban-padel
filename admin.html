@@ -780,7 +780,8 @@ function schedDE(e){e.target?.classList.remove('dragging');document.querySelecto
 function schedDrop(e,toKey){e.preventDefault();document.querySelectorAll('.sched-slot').forEach(s=>s.classList.remove('drag-over'));const lid=getActiveLiga();if(!lid||schedDragGrupo===null)return;
   // Check restrictions for this turno
   const turno=toKey.split('_')[0];
-  const jId=getJnId();
+  const jnNum=parseInt(document.getElementById('jn')?.value)||0;
+  const jId=(S.jornadas.find(j=>j.liga===lid&&j.num===jnNum)||{}).id||null;
   const conflictos=getRestriccionesForTurno(lid,turno,jId);
   const grupoPlayers=S.players.filter(p=>p.liga===lid&&p.grupo===schedDragGrupo);
   const afectados=conflictos.filter(cp=>grupoPlayers.find(gp=>gp.id===cp.id));
