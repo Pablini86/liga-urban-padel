@@ -506,7 +506,7 @@ document.getElementById('logout-btn').onclick=()=>{
 };
 
 // ═══ STATE ═══
-let S={ligas:[],players:[],partidos:[],jornadas:[],promociones:[],activeLiga:null};
+let S={ligas:[],players:[],partidos:[],jornadas:[],promociones:[],restricciones:[],activeLiga:null};
 let scheduleAssignments={},capturaGrupoActivo=null,capturaState={},modoDirecto={},dsrc=null;
 let _id=Date.now(); const uid=()=>(++_id).toString(36);
 
@@ -517,6 +517,7 @@ function initListeners(){
   db.collection('partidos').onSnapshot(s=>{S.partidos=s.docs.map(d=>({id:d.id,...d.data()}));renderAdmin();});
   db.collection('jornadas').onSnapshot(s=>{S.jornadas=s.docs.map(d=>({id:d.id,...d.data()}));renderAdmin();});
   db.collection('promociones').onSnapshot(s=>{S.promociones=s.docs.map(d=>({id:d.id,...d.data()}));});
+  db.collection('restricciones').onSnapshot(s=>{S.restricciones=s.docs.map(d=>({id:d.id,...d.data()}));renderRestricciones();});
 }
 
 // ═══ MIGRATE ═══
@@ -780,15 +781,6 @@ function schedDE(e){e.target?.classList.remove('dragging');document.querySelecto
 function schedDrop(e,toKey){e.preventDefault();document.querySelectorAll('.sched-slot').forEach(s=>s.classList.remove('drag-over'));const lid=getActiveLiga();if(!lid||schedDragGrupo===null)return;
   // Check restrictions for this turno
   const turno=toKey.split('_')[0];
-  const jnNum=parseInt(document.getElementById('jn')?.value)||0;
-  const jId=(S.jornadas.find(j=>j.liga===lid&&j.num===jnNum)||{}).id||null;
-  const conflictos=getRestriccionesForTurno(lid,turno,jId);
-  const grupoPlayers=S.players.filter(p=>p.liga===lid&&p.grupo===schedDragGrupo);
-  const afectados=conflictos.filter(cp=>grupoPlayers.find(gp=>gp.id===cp.id));
-  if(afectados.length){
-    const nombres=afectados.map(p=>pShort(p.nombre)).join(', ');
-    if(!confirm('Restriccion de horario\n\n'+nombres+' no puede jugar a las '+turno+'\n\nAsignar de todas formas como excepcion?'))return;
-  }
   const jnum=parseInt(document.getElementById('jn').value)||1;const tempKey=`${lid}_j${jnum}`;if(!scheduleAssignments[tempKey])scheduleAssignments[tempKey]={};const asgn=scheduleAssignments[tempKey];const existing=asgn[toKey];if(schedDragFrom?.startsWith('slot:')){const fk=schedDragFrom.replace('slot:','');delete asgn[fk];if(existing)asgn[fk]=existing;}asgn[toKey]=schedDragGrupo;renderScheduleGrid();}
 function schedRm(tempKey,slotKey){if(scheduleAssignments[tempKey])delete scheduleAssignments[tempKey][slotKey];}
 function autoAssign(){const lid=getActiveLiga();if(!lid)return;const grupos=[...new Set(S.players.filter(p=>p.liga===lid).map(p=>p.grupo))].sort((a,b)=>a-b);const turnos=document.getElementById('jt').value.split('\n').map(t=>t.trim()).filter(Boolean);const canchas=parseInt(document.getElementById('jc').value)||6;const jnum=parseInt(document.getElementById('jn').value)||1;const tempKey=`${lid}_j${jnum}`;scheduleAssignments[tempKey]={};const asgn=scheduleAssignments[tempKey];let gi=0;outer:for(let t=0;t<turnos.length;t++)for(let c=1;c<=canchas;c++){if(gi>=grupos.length)break outer;asgn[`${turnos[t]}_C${c}`]=grupos[gi++];}renderScheduleGrid();toast('✓ Auto-asignado');}
@@ -1177,6 +1169,89 @@ function printTabla(){const lid=getActiveLiga();if(!lid){toast('Selecciona liga'
 
 // ═══ IMPORT EXCEL ═══
 function importExcel(input){const file=input.files[0];if(!file)return;const lid=getActiveLiga();if(!lid){toast('Selecciona liga primero',1);input.value='';return;}const liga=S.ligas.find(l=>l.id===lid);const reader=new FileReader();reader.onload=async e=>{try{const data=new Uint8Array(e.target.result);const wb=XLSX.read(data,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{defval:''});if(!rows.length){toast('Archivo vacío',1);input.value='';return;}const keys=Object.keys(rows[0]);const fk=p=>keys.find(k=>p.some(x=>k.toLowerCase().replace(/\s/g,'').includes(x)))||null;const cN=fk(['nombre','name','jugador']),cG=fk(['grupo','group','grp']);if(!cN||!cG){toast('Necesito columnas Nombre y Grupo',1);input.value='';return;}const toAdd=[];rows.forEach(row=>{const nom=String(row[cN]||'').trim();const g=parseInt(row[cG]);if(!nom||isNaN(g)||g<1)return;toAdd.push({nombre:nom,grupo:g,cat:'Avanzado'});});if(!toAdd.length){toast('Sin jugadores válidos',1);input.value='';return;}const exist=S.players.filter(p=>p.liga===lid).map(p=>p.nombre.toLowerCase());const valid=toAdd.filter(p=>!exist.includes(p.nombre.toLowerCase()));if(!confirm(`¿Importar ${valid.length} jugadores?`)){input.value='';return;}const ops=[];let added=0;const grupos=[...new Set(valid.map(p=>p.grupo))].sort((a,b)=>a-b);grupos.forEach(g=>{valid.filter(p=>p.grupo===g).forEach(p=>{const base=S.players.filter(x=>x.liga===lid).length+added;const np={id:uid(),nombre:p.nombre,cat:p.cat,liga:lid,tel:'',orden:base,grupo:g,ausente:false};ops.push({op:'set',col:'players',id:np.id,data:np});added++;});});await fsBatch(ops);toast(`✓ ${added} importados`);} catch(err){toast('Error: '+err.message,1);}input.value='';};reader.readAsArrayBuffer(file);}
+
+
+// ═══ RESTRICCIONES ═══
+function getRestriccionesForTurno(lid,turno,jId){
+  if(!S.restricciones)return[];
+  return S.restricciones.filter(r=>{
+    if(r.liga!==lid||r.turno!==turno)return false;
+    if(r.scope==='liga')return true;
+    if(r.scope==='jornada'&&r.jornadaId===jId)return true;
+    return false;
+  }).map(r=>pById(r.pid)).filter(Boolean);
+}
+
+function renderRestricciones(){
+  const lid=getActiveLiga();
+  const el=document.getElementById('restricciones-list');
+  if(!el)return;
+  const rsts=(S.restricciones||[]).filter(r=>r.liga===lid);
+  if(!rsts.length){
+    el.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted2);font-size:.85rem">Sin restricciones</div>';
+    return;
+  }
+  const byPlayer={};
+  rsts.forEach(r=>{if(!byPlayer[r.pid])byPlayer[r.pid]=[];byPlayer[r.pid].push(r);});
+  el.innerHTML=Object.entries(byPlayer).map(([pid,rs])=>{
+    const p=pById(pid);if(!p)return'';
+    return '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.85rem 1rem;margin-bottom:.55rem">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">'+
+        '<div style="font-weight:600">'+p.nombre+'</div>'+
+        '<span style="font-size:.65rem;color:var(--muted2)">G'+p.grupo+'</span>'+
+      '</div>'+
+      '<div style="display:flex;flex-wrap:wrap;gap:.35rem">'+
+        rs.map(r=>{
+          const jLabel=r.scope==='liga'?'Toda la liga':('J'+((S.jornadas.find(j=>j.id===r.jornadaId)||{}).num||'?'));
+          return '<div style="display:flex;align-items:center;gap:.4rem;background:rgba(255,59,92,.08);border:1px solid rgba(255,59,92,.2);border-radius:6px;padding:.25rem .6rem">'+
+            '<span style="font-size:.75rem;font-weight:600;color:var(--accent2)">'+r.turno+'</span>'+
+            '<span style="font-size:.65rem;color:var(--muted2)">'+jLabel+'</span>'+
+            '<button onclick="delRestriccion(\"'+r.id+'\")" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.7rem;padding:0 0 0 2px">X</button>'+
+          '</div>';
+        }).join('')+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function openAddRestriccion(){
+  const lid=getActiveLiga();
+  const pSel=document.getElementById('rst-player');
+  const ps=S.players.filter(p=>p.liga===lid).sort((a,b)=>a.grupo-b.grupo||a.orden-b.orden);
+  pSel.innerHTML=ps.map(p=>'<option value="'+p.id+'">G'+p.grupo+' - '+p.nombre+'</option>').join('');
+  const turnos=[...new Set(S.jornadas.filter(j=>j.liga===lid).flatMap(j=>j.turnos||[]))].sort();
+  const tSel=document.getElementById('rst-turno');
+  tSel.innerHTML=(turnos.length?turnos:['18:00','19:15','20:30','21:45']).map(t=>'<option value="'+t+'">'+t+'</option>').join('');
+  const jSel=document.getElementById('rst-jornada');
+  const js=S.jornadas.filter(j=>j.liga===lid).sort((a,b)=>a.num-b.num);
+  jSel.innerHTML=js.map(j=>'<option value="'+j.id+'">J'+j.num+(j.fecha?' - '+j.fecha:'')+'</option>').join('');
+  document.getElementById('rst-scope').value='liga';
+  document.getElementById('rst-jornada-wrap').style.display='none';
+  openM('m-restriccion');
+}
+
+function toggleRstJornada(){
+  const scope=document.getElementById('rst-scope').value;
+  document.getElementById('rst-jornada-wrap').style.display=scope==='jornada'?'':'none';
+}
+
+async function saveRestriccion(){
+  const lid=getActiveLiga();
+  const pid=document.getElementById('rst-player').value;
+  const turno=document.getElementById('rst-turno').value;
+  const scope=document.getElementById('rst-scope').value;
+  const jornadaId=scope==='jornada'?document.getElementById('rst-jornada').value:null;
+  if(!pid||!turno){toast('Faltan datos',1);return;}
+  const r={id:uid(),liga:lid,pid,turno,scope,jornadaId:jornadaId||null};
+  await fsSet('restricciones',r.id,r);
+  closeM('m-restriccion');
+  toast('Restriccion guardada');
+}
+
+async function delRestriccion(id){
+  await fsDel('restricciones',id);
+  toast('Restriccion eliminada');
+}
 
 // ═══ UTILS ═══
 function openM(id){document.getElementById(id).classList.add('open');}
