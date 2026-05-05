@@ -773,7 +773,19 @@ function renderScheduleGrid(){
 
 function schedDS(e,from,g){schedDragGrupo=g;schedDragFrom=from;setTimeout(()=>e.target?.classList.add('dragging'),0);}
 function schedDE(e){e.target?.classList.remove('dragging');document.querySelectorAll('.sched-slot').forEach(s=>s.classList.remove('drag-over'));}
-function schedDrop(e,toKey){e.preventDefault();document.querySelectorAll('.sched-slot').forEach(s=>s.classList.remove('drag-over'));const lid=getActiveLiga();if(!lid||schedDragGrupo===null)return;const jnum=parseInt(document.getElementById('jn').value)||1;const tempKey=`${lid}_j${jnum}`;if(!scheduleAssignments[tempKey])scheduleAssignments[tempKey]={};const asgn=scheduleAssignments[tempKey];const existing=asgn[toKey];if(schedDragFrom?.startsWith('slot:')){const fk=schedDragFrom.replace('slot:','');delete asgn[fk];if(existing)asgn[fk]=existing;}asgn[toKey]=schedDragGrupo;renderScheduleGrid();}
+function schedDrop(e,toKey){e.preventDefault();document.querySelectorAll('.sched-slot').forEach(s=>s.classList.remove('drag-over'));const lid=getActiveLiga();if(!lid||schedDragGrupo===null)return;
+  // Check restrictions
+  const turno=toKey.split('_')[0];
+  const jnum2=parseInt(document.getElementById('jn').value)||0;
+  const jId2=(S.jornadas.find(j=>j.liga===lid&&j.num===jnum2)||{}).id||null;
+  const conflictos=getRestriccionesForTurno(lid,turno,jId2);
+  const grupoPlayers=S.players.filter(p=>p.liga===lid&&p.grupo===schedDragGrupo);
+  const afectados=conflictos.filter(cp=>grupoPlayers.find(gp=>gp.id===cp.id));
+  if(afectados.length){
+    const nombres=afectados.map(p=>pShort(p.nombre)).join(', ');
+    if(!confirm('Restriccion de horario\n\n'+nombres+' no puede jugar a las '+turno+'\n\n¿Asignar de todas formas como excepcion?'))return;
+  }
+  const jnum=parseInt(document.getElementById('jn').value)||1;const tempKey=`${lid}_j${jnum}`;if(!scheduleAssignments[tempKey])scheduleAssignments[tempKey]={};const asgn=scheduleAssignments[tempKey];const existing=asgn[toKey];if(schedDragFrom?.startsWith('slot:')){const fk=schedDragFrom.replace('slot:','');delete asgn[fk];if(existing)asgn[fk]=existing;}asgn[toKey]=schedDragGrupo;renderScheduleGrid();}
 function schedRm(tempKey,slotKey){if(scheduleAssignments[tempKey])delete scheduleAssignments[tempKey][slotKey];}
 function autoAssign(){const lid=getActiveLiga();if(!lid)return;const grupos=[...new Set(S.players.filter(p=>p.liga===lid).map(p=>p.grupo))].sort((a,b)=>a-b);const turnos=document.getElementById('jt').value.split('\n').map(t=>t.trim()).filter(Boolean);const canchas=parseInt(document.getElementById('jc').value)||6;const jnum=parseInt(document.getElementById('jn').value)||1;const tempKey=`${lid}_j${jnum}`;scheduleAssignments[tempKey]={};const asgn=scheduleAssignments[tempKey];let gi=0;outer:for(let t=0;t<turnos.length;t++)for(let c=1;c<=canchas;c++){if(gi>=grupos.length)break outer;asgn[`${turnos[t]}_C${c}`]=grupos[gi++];}renderScheduleGrid();toast('✓ Auto-asignado');}
 
