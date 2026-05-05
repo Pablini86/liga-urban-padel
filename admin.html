@@ -258,6 +258,8 @@ select option{background:var(--dark);}
             <div style="font-size:.74rem;color:var(--muted2);margin-top:.2rem">Jugadores que no pueden jugar en ciertos turnos</div>
           </div>
         </div>
+        <input id="rst-search" type="text" placeholder="Buscar jugador..." oninput="filterRestricciones(this.value)"
+          style="width:100%;padding:.65rem 1rem;border-radius:9px;border:1px solid var(--border2);background:var(--card2);color:var(--text);font-size:.88rem;outline:none;box-sizing:border-box;margin-bottom:.75rem;font-family:inherit">
         <div id="restricciones-list"></div>
       </div>
     </div>
@@ -1220,6 +1222,15 @@ function openAddRestriccion(preselectPid){
 function toggleRstJornada(){
   document.getElementById('rst-jornada-wrap').style.display=document.getElementById('rst-scope').value==='jornada'?'':'none';
 }
+
+function filterRestricciones(q){
+  const term=q.toLowerCase().trim();
+  document.querySelectorAll('#restricciones-list > div > div').forEach(row=>{
+    const name=row.querySelector('span[style*="font-weight:600"]')?.textContent||'';
+    row.style.display=(!term||name.toLowerCase().includes(term))?'':'none';
+  });
+}
+
 
 async function saveRestriccion(){
   const lid=getActiveLiga();
