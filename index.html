@@ -285,7 +285,7 @@ td.tot{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;}
   </div>
 </div>
 
-<script>const J1_HORARIOS = [{"grupo": 1, "turno": "19:15", "jugadores": ["Antonio Reynoso", "Gustavo Schraidt", "Daniel Gonzalez", "Rafael Pacheco"]}, {"grupo": 2, "turno": "18:00", "jugadores": ["Adolfo Schraidt", "Pepe Maldonado", "Rodrigo Arreola", "Gabriel Salles"]}, {"grupo": 3, "turno": "18:00", "jugadores": ["Eduardo González", "Ricardo Caballero", "Daniel Bojorquez", "Agustin Pacheco"]}, {"grupo": 4, "turno": "20:30", "jugadores": ["Diego Hernández", "Gustavo Sandoval", "Gerardo Schraidt", "Pablo Lemus"]}, {"grupo": 5, "turno": "19:15", "jugadores": ["Daniela Peregrina", "Francisco Torres", "Oscar Cancino", "Rubén Zepeda"]}, {"grupo": 6, "turno": "19:15", "jugadores": ["Erika Gutiérrez", "Alejandro Camarena", "Ricardo Garibay", "Carlos Luna Díaz"]}, {"grupo": 7, "turno": "19:15", "jugadores": ["Oscar Campos", "Emiliano Rivera", "Poncho Alarcon", "Martín Bojórquez"]}, {"grupo": 8, "turno": "18:00", "jugadores": ["Aldo Rosas", "Manolo Chávez", "Cesar Rubio", "Blanca Estela Nuño"]}, {"grupo": 9, "turno": "20:30", "jugadores": ["Alejandro Gómez", "Sebastian Guizar", "Juan Pablo Sandoval", "Daniel Muñoz"]}, {"grupo": 10, "turno": "18:00", "jugadores": ["Diego Lepe", "Alfredo Martinez", "Alan Vázquez", "Adrian Michel"]}, {"grupo": 11, "turno": "20:30", "jugadores": ["Leonel Lee", "Juan Pablo Sandoval", "Lupita Salcedo", "José Luis Lomeli"]}, {"grupo": 12, "turno": "18:00", "jugadores": ["Livier Rodríguez", "Jorge Villa", "Aldo Coronado", "Alma Preciado"]}, {"grupo": 13, "turno": "20:30", "jugadores": ["Mónica López Sainz", "Héctor Gutiérrez", "Alexis Popp", "Claudia Medina"]}, {"grupo": 14, "turno": "20:30", "jugadores": ["Erik Hernández", "Maria Rubio", "Rafa Pacheco Jr", "Cesar Medina"]}, {"grupo": 15, "turno": "20:30", "jugadores": ["Dhamara Castro", "Luis Carmona", "Regina Campos Levin", "Diego Ahumada"]}, {"grupo": 16, "turno": "18:00", "jugadores": ["Marco García", "Arturo Osuna", "Edgar Montaño Ramos", "Tomas Zertuche"]}, {"grupo": 17, "turno": "19:15", "jugadores": ["Santiago Lepe", "Georgina Hermosillo", "Luca Olivares", "Antonieta Rojas"]}, {"grupo": 18, "turno": "19:15", "jugadores": ["Antonio Avila", "Elisabeth Piccirillo", "Alexa Velázquez", "Zuzeth Jauregui"]}];
+<script>// J1_HORARIOS removed
 
 
 firebase.initializeApp({
@@ -371,12 +371,11 @@ function renderHome(){
     el.innerHTML='<div class="empty-state"><div>🎾</div><p>Sin ligas activas</p></div>';
     return;
   }
-  const activas=S.ligas.filter(l=>l.status!=='archivada');
-  const archivadas=S.ligas.filter(l=>l.status==='archivada');
-
-  const cardActiva=l=>{
+  el.innerHTML=S.ligas.filter(l=>l.status!=='archivada').map(l=>{
     const ps=S.players.filter(p=>p.liga===l.id).length;
     const js=S.jornadas.filter(j=>j.liga===l.id);
+    // Find current jornada (last one with matches)
+    // Only count jornadas where ALL matches are finalized
     const jornadasCompletas=js.filter(j=>{
       const ms=S.partidos.filter(p=>p.jornadaId===j.id);
       return ms.length>0&&ms.every(m=>m.finalizado&&m.gA!==null);
@@ -398,39 +397,7 @@ function renderHome(){
       <div style="font-size:.68rem;color:var(--muted2)">${jornadasCompletas.length}/${l.nj||6} jornadas completadas</div>
       <div class="lc-arrow">→</div>
     </div>`;
-  };
-
-  const cardArchivada=l=>{
-    const global=calcGlobal(l.id);
-    const top3=global.slice(0,3);
-    const medals=['🥇','🥈','🥉'];
-    return`<div class="league-card" onclick="openLiga('${l.id}')" style="border-color:rgba(255,215,0,.2);opacity:.85">
-      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.65rem">
-        <span style="font-size:.65rem;font-weight:700;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase">Finalizada</span>
-        ${l.fechaCierre?`<span style="font-size:.65rem;color:var(--muted2)">${l.fechaCierre}</span>`:''}
-      </div>
-      <div class="lc-name" style="font-size:1.4rem">${l.nombre}</div>
-      <div class="lc-dia">${l.dia||''} · ${l.cat||'Mixta'}</div>
-      <div style="margin-top:.65rem;background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.15);border-radius:7px;padding:.6rem .75rem">
-        <div style="font-size:.58rem;font-weight:700;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:.4rem">Podio</div>
-        ${top3.map((x,i)=>`<div style="display:flex;align-items:center;gap:.5rem;padding:.2rem 0;font-size:.8rem">
-          <span>${medals[i]}</span>
-          <span style="flex:1;font-weight:${i===0?700:400}">${x.player.nombre}</span>
-          <span style="font-family:'Bebas Neue',sans-serif;font-size:1rem;color:${x.total>=0?'var(--accent)':'var(--accent2)'}">${x.total>0?'+':''}${x.total}</span>
-        </div>`).join('')}
-      </div>
-      <div class="lc-arrow" style="color:var(--muted2)">→</div>
-    </div>`;
-  };
-
-  let html='';
-  if(activas.length) html+=activas.map(cardActiva).join('');
-  if(archivadas.length){
-    if(activas.length) html+=`<div style="font-size:.63rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin:1.5rem 0 .65rem;grid-column:1/-1">Ligas anteriores</div>`;
-    html+=archivadas.map(cardArchivada).join('');
-  }
-  if(!activas.length&&!archivadas.length) html='<div class="empty-state"><div>🎾</div><p>Sin ligas activas</p></div>';
-  el.innerHTML=html;
+  }).join('');
 }
 
 // LIGA
@@ -745,17 +712,6 @@ function renderHorariosSingle(lid, jId){
   const jornada = S.jornadas.find(j => j.id === jId);
   const el = document.getElementById('horarios-content');
   if(!el) return;
-
-  // J1: hardcoded from PDF
-  if(jornada && jornada.num === 1){
-    renderHorariosGrid(el, jId, 'JORNADA 1', '2026-03-11', ['18:00','19:15','20:30'],
-      J1_HORARIOS.map(({grupo, turno, jugadores}) => ({
-        grupo, turno,
-        players: jugadores.map(n => ({nombre: n, inicial: n[0]}))
-      }))
-    );
-    return;
-  }
 
   const ms = S.partidos.filter(p => p.jornadaId === jId);
   const byGrupo = {};
