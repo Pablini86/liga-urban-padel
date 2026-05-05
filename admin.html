@@ -1089,11 +1089,19 @@ async function saveHorarios(){
   const lid=getActiveLiga();
   const num=parseInt(document.getElementById('jn')?.value);
   if(!lid||!num){toast('Selecciona liga y jornada',1);return;}
-  const existing=S.jornadas.find(j=>j.liga===lid&&j.num===num);
-  if(!existing){toast('Esta jornada no existe aún. Créala desde Promociones.',1);return;}
   const tempKey=lid+'_j'+num;
   const asgn=scheduleAssignments[tempKey]||{};
   if(!Object.keys(asgn).length){toast('Arrastra los grupos a las canchas primero',1);return;}
+  let existing=S.jornadas.find(j=>j.liga===lid&&j.num===num);
+  if(!existing){
+    const t2=document.getElementById('jt').value.split('\n').map(t=>t.trim()).filter(Boolean);
+    const c2=parseInt(document.getElementById('jc').value)||6;
+    const f2=document.getElementById('jf').value;
+    const nid=uid();
+    await fsSet('jornadas',nid,{id:nid,liga:lid,num,fecha:f2,canchas:c2,turnos:t2});
+    existing={id:nid,liga:lid,num,fecha:f2,canchas:c2,turnos:t2};
+    await new Promise(r=>setTimeout(r,300));
+  }
   const turnos=document.getElementById('jt').value.split('\n').map(t=>t.trim()).filter(Boolean);
   const fecha=document.getElementById('jf').value;
   const canchas=parseInt(document.getElementById('jc').value)||6;
