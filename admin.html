@@ -654,7 +654,37 @@ async function createLiga(){const n=document.getElementById('nl-n').value.trim()
 async function delLiga(id){if(!confirm('¿Eliminar?'))return;const ops=[{op:'del',col:'ligas',id}];S.players.filter(p=>p.liga===id).forEach(p=>ops.push({op:'del',col:'players',id:p.id}));S.partidos.filter(p=>p.liga===id).forEach(p=>ops.push({op:'del',col:'partidos',id:p.id}));S.jornadas.filter(j=>j.liga===id).forEach(j=>ops.push({op:'del',col:'jornadas',id:j.id}));await fsBatch(ops);if(S.activeLiga===id)S.activeLiga=S.ligas.find(l=>l.id!==id)?.id||null;toast('Liga eliminada');}
 async function addP(){const n=document.getElementById('pn').value.trim();if(!n){toast('Escribe nombre',1);return;}const liga=getActiveLiga();if(!liga){toast('Selecciona liga',1);return;}const ps=S.players.filter(p=>p.liga===liga);const p={id:uid(),nombre:n,cat:document.getElementById('pc').value,liga,tel:document.getElementById('pt').value,orden:ps.length,grupo:Math.floor(ps.length/4)+1,ausente:false};await fsSet('players',p.id,p);document.getElementById('pn').value='';document.getElementById('pt').value='';toast('✓ Jugador agregado');}
 async function delP(id){await fsDel('players',id);toast('Eliminado');}
-function renderPlist(){const el=document.getElementById('plist');if(!el)return;const lid=getActiveLiga();const ps=S.players.filter(p=>p.liga===lid);const byL={};ps.forEach(p=>{if(!byL[p.liga])byL[p.liga]=[];byL[p.liga].push(p)});el.innerHTML=Object.entries(byL).map(([lid,ps])=>{const l=S.ligas.find(x=>x.id===lid);return`<div style="margin-bottom:.85rem"><div style="font-size:.63rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.3rem">${l?.nombre||lid} (${ps.length})</div><div style="display:flex;flex-wrap:wrap;gap:.22rem">${ps.map(p=>`<div style="display:flex;align-items:center;gap:.3rem;background:var(--card2);border:1px solid var(--border);border-radius:5px;padding:.22rem .55rem;font-size:.74rem"><span style="background:var(--border2);border-radius:50%;width:17px;height:17px;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700;color:var(--accent)">${p.grupo}</span>${p.nombre}<button style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:.78rem" onclick="delP('${p.id}')">✕</button></div>`).join('')}</div></div>`;}).join('')||'<p style="color:var(--muted2);font-size:.78rem">Sin jugadores</p>';}
+async function editPNombre(id){
+  const p=pById(id);if(!p)return;
+  const nuevo=prompt('Editar nombre:',p.nombre);
+  if(!nuevo||nuevo.trim()===p.nombre)return;
+  await fsSet('players',id,{...p,nombre:nuevo.trim()});
+  toast('Nombre actualizado');
+}
+function renderPlist(){
+  const el=document.getElementById('plist');
+  if(!el)return;
+  const lid=getActiveLiga();
+  const ps=S.players.filter(p=>p.liga===lid);
+  if(!ps.length){el.innerHTML='<p style="color:var(--muted2);font-size:.78rem">Sin jugadores</p>';return;}
+  const byG={};
+  ps.forEach(p=>{if(!byG[p.grupo])byG[p.grupo]=[];byG[p.grupo].push(p);});
+  const liga=S.ligas.find(l=>l.id===lid);
+  var html='<div style="margin-bottom:.85rem">';
+  html+='<div style="font-size:.63rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.3rem">'+(liga?liga.nombre:lid)+' ('+ps.length+')</div>';
+  html+='<div style="display:flex;flex-wrap:wrap;gap:.22rem">';
+  ps.forEach(function(p){
+    html+='<div style="display:flex;align-items:center;gap:.3rem;background:var(--card2);border:1px solid var(--border);border-radius:5px;padding:.22rem .55rem;font-size:.74rem">';
+    html+='<span style="background:var(--border2);border-radius:50%;width:17px;height:17px;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700;color:var(--accent)">'+p.grupo+'</span>';
+    html+=p.nombre;
+    html+='<button style="background:none;border:none;color:var(--accent3);cursor:pointer;font-size:.72rem" data-pid="'+p.id+'" onclick="editPNombre(this.dataset.pid)">&#9998;</button>';
+    html+='<button style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:.78rem" data-pid="'+p.id+'" onclick="delP(this.dataset.pid)">&#x2715;</button>';
+    html+='</div>';
+  });
+  html+='</div></div>';
+  el.innerHTML=html;
+}
+
 function renderDrag(){const el=document.getElementById('drag-cont');if(!el)return;const lid=getActiveLiga();const ps=[...S.players.filter(p=>p.liga===lid)].sort((a,b)=>a.orden-b.orden);if(!ps.length){el.innerHTML='<p style="color:var(--muted2);font-size:.74rem">Sin jugadores</p>';return;}const list=document.createElement('div');list.className='dlist';list.id='dl';ps.forEach((p,i)=>{const item=document.createElement('div');item.className='di';item.dataset.pid=p.id;item.draggable=true;item.innerHTML=`<span style="color:var(--muted);font-size:.82rem">⠿</span><span style="font-family:'Bebas Neue';font-size:.95rem;color:var(--muted);min-width:24px">${i+1}</span><div class="pav">${p.nombre[0]}</div><span style="flex:1;font-size:.8rem;font-weight:500">${p.nombre}</span><span style="font-size:.64rem;color:var(--muted2)">G${Math.floor(i/4)+1}</span>`;item.addEventListener('dragstart',e=>{dsrc=item;item.classList.add('dragging');e.dataTransfer.effectAllowed='move';});item.addEventListener('dragend',()=>{item.classList.remove('dragging');updDrag();});item.addEventListener('dragover',e=>{e.preventDefault();if(dsrc&&dsrc!==item){const r=item.getBoundingClientRect();if(e.clientY<r.top+r.height/2)list.insertBefore(dsrc,item);else list.insertBefore(dsrc,item.nextSibling);}});list.appendChild(item);});el.innerHTML='';el.appendChild(list);}
 function updDrag(){document.querySelectorAll('#dl .di').forEach((item,i)=>{item.querySelectorAll('span')[1].textContent=i+1;item.querySelectorAll('span')[4].textContent='G'+(Math.floor(i/4)+1);});}
 async function saveOrder(){const items=document.querySelectorAll('#dl .di');if(!items.length){toast('Sin jugadores',1);return;}const ops=[];items.forEach((item,i)=>{const p=S.players.find(x=>x.id===item.dataset.pid);if(p){p.orden=i;p.grupo=Math.floor(i/4)+1;ops.push({op:'set',col:'players',id:p.id,data:{...p}});}});await fsBatch(ops);toast('✓ Orden guardado');}
