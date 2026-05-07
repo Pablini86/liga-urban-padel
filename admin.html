@@ -498,7 +498,7 @@ document.getElementById('logout-btn').onclick=()=>{
 
 // ═══ STATE ═══
 let S={ligas:[],players:[],partidos:[],jornadas:[],promociones:[],restricciones:[],activeLiga:null};
-let scheduleAssignments={},capturaGrupoActivo=null,capturaState={},modoDirecto={},dsrc=null;
+let scheduleAssignments={},capturaGrupoActivo=null,capturaJornadaActiva=null,capturaState={},modoDirecto={},dsrc=null;
 let _id=Date.now(); const uid=()=>(++_id).toString(36);
 
 // ═══ FIRESTORE LISTENERS ═══
@@ -707,9 +707,9 @@ function updateJN(){
   const nextNum=(js.length?Math.max(...js.map(j=>j.num)):0)+1;
   const cur=jnEl.tagName==='SELECT'?jnEl.value:parseInt(jnEl.value);
   if(jnEl.tagName==='SELECT'){
-    jnEl.innerHTML=js.map(j=>'<option value="'+j.num+'"'+(j.num==cur?' selected':'')+'>J'+j.num+(j.fecha?' · '+j.fecha:'')+'</option>').join('')+
+    jnEl.innerHTML='<option value="">— selecciona —</option>'+
+      js.map(j=>'<option value="'+j.num+'"'+(j.num==cur?' selected':'')+'>J'+j.num+(j.fecha?' · '+j.fecha:'')+'</option>').join('')+
       '<option value="'+nextNum+'"'+(cur==nextNum?' selected':'')+'>+ Nueva J'+nextNum+'</option>';
-    if(!jnEl.value)jnEl.value=js.length?js[js.length-1].num:nextNum;
   } else {jnEl.value=nextNum;}
 }
 
@@ -825,10 +825,11 @@ async function genJornada(){const lid=getActiveLiga();if(!lid){toast('Selecciona
 // ═══ CAPTURA ═══
 const csKey=(jId,g)=>`${jId}_${g}`;
 function getCS(jId,g){const k=csKey(jId,g);if(!capturaState[k]){const gms=S.partidos.filter(m=>m.jornadaId===jId&&m.grupo===g).sort((a,b)=>a.set-b.set);capturaState[k]={scores:gms.map(m=>m.finalizado?[m.gA,m.gB]:[null,null]),ausentes:new Set(),directPts:{}};}return capturaState[k];}
-function renderCaptura(){const lid=getActiveLiga();const jSel=document.getElementById('rj');if(lid&&jSel){const js=S.jornadas.filter(j=>j.liga===lid&&S.partidos.some(p=>p.jornadaId===j.id)).sort((a,b)=>b.num-a.num);const cur=jSel.value;jSel.innerHTML='<option value="">— selecciona —</option>'+js.map(j=>`<option value="${j.id}"${j.id===cur?' selected':''}>J${j.num} · ${j.fecha}</option>`).join('');}const jId=document.getElementById('rj')?.value;if(!jId){document.getElementById('captura-progress').innerHTML='';document.getElementById('captura-nav').innerHTML='';document.getElementById('captura-grupo').innerHTML='';return;}const ms=S.partidos.filter(p=>p.jornadaId===jId);const grupos=[...new Set(ms.map(m=>m.grupo))].sort((a,b)=>a-b);if(!capturaGrupoActivo||!grupos.includes(capturaGrupoActivo)){
-    // Default to first unfinished group
+function renderCaptura(){const lid=getActiveLiga();const jSel=document.getElementById('rj');if(lid&&jSel){const js=S.jornadas.filter(j=>j.liga===lid&&S.partidos.some(p=>p.jornadaId===j.id)).sort((a,b)=>b.num-a.num);const cur=jSel.value;jSel.innerHTML='<option value="">— selecciona —</option>'+js.map(j=>`<option value="${j.id}"${j.id===cur?' selected':''}>J${j.num} · ${j.fecha}</option>`).join('');}const jId=document.getElementById('rj')?.value;if(!jId){document.getElementById('captura-progress').innerHTML='';document.getElementById('captura-nav').innerHTML='';document.getElementById('captura-grupo').innerHTML='';return;}const ms=S.partidos.filter(p=>p.jornadaId===jId);const grupos=[...new Set(ms.map(m=>m.grupo))].sort((a,b)=>a-b);if(capturaJornadaActiva!==jId||!capturaGrupoActivo||!grupos.includes(capturaGrupoActivo)){
+    // Reset only when jornada changes or grupo invalid
     const firstUnfinished=grupos.find(g=>{const gms=ms.filter(m=>m.grupo===g);return gms.length>0&&!gms.every(m=>m.finalizado&&m.gA!==null);});
     capturaGrupoActivo=firstUnfinished||grupos[0];
+    capturaJornadaActiva=jId;
   }const grpFin=grupos.filter(g=>{const gms=ms.filter(m=>m.grupo===g);return gms.length>0&&gms.every(m=>m.finalizado&&m.gA!==null);}).length;const pct=grupos.length?Math.round(grpFin/grupos.length*100):0;document.getElementById('captura-progress').innerHTML=`<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.8rem 1rem"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.45rem"><span style="font-size:.76rem;font-weight:600">Progreso</span><span style="font-family:'Bebas Neue';font-size:1.15rem;color:${pct===100?'var(--accent3)':'var(--accent)'}">${grpFin}/${grupos.length} grupos</span></div><div style="height:7px;background:var(--border2);border-radius:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct===100?'var(--accent3)':'var(--accent)'};border-radius:4px;transition:width .3s"></div></div></div>`;document.getElementById('captura-nav').innerHTML=grupos.map(g=>{const gms=ms.filter(m=>m.grupo===g);const done=gms.length>0&&gms.every(m=>m.finalizado&&m.gA!==null);const active=g===capturaGrupoActivo;return`<button onclick="capturaGoTo(${g},'${jId}')" style="padding:.28rem .65rem;border-radius:6px;cursor:pointer;font-family:'Bebas Neue';font-size:.95rem;letter-spacing:1px;border:1.5px solid ${active?'var(--accent)':done?'var(--accent3)':'var(--border2)'};background:${active?'var(--accent)':done?'rgba(0,229,158,.08)':'transparent'};color:${active?'var(--black)':done?'var(--accent3)':'var(--muted2)'}">G${g}${done?' ✓':''}</button>`;}).join('');renderCapturaGrupo(jId);}
 function capturaGoTo(g,jId){capturaGrupoActivo=g;renderCapturaGrupo(jId);}
 function renderCapturaGrupo(jId){if(!jId)jId=document.getElementById('rj')?.value;const g=capturaGrupoActivo;if(!jId||!g){document.getElementById('captura-grupo').innerHTML='';return;}const gms=S.partidos.filter(m=>m.jornadaId===jId&&m.grupo===g).sort((a,b)=>a.set-b.set);if(!gms.length){document.getElementById('captura-grupo').innerHTML='<p style="color:var(--muted2)">Sin partidos</p>';return;}const jornada=S.jornadas.find(j=>j.id===jId);const pids=[gms[0].a1,gms[0].a2,gms[0].b1,gms[0].b2];const cs=getCS(jId,g);const grupos=[...new Set(S.partidos.filter(m=>m.jornadaId===jId).map(m=>m.grupo))].sort((a,b)=>a-b);const gIdx=grupos.indexOf(g);const prevG=grupos[gIdx-1]||null;const nextG=grupos[gIdx+1]||null;const done=gms.every(m=>m.finalizado&&m.gA!==null);const isDirect=modoDirecto[csKey(jId,g)]||false;function lD(pid){let gf=0,gc=0;gms.forEach((m,si)=>{const vA=cs.scores[si]?.[0]??0,vB=cs.scores[si]?.[1]??0;const enA=[m.a1,m.a2].includes(pid);gf+=enA?vA:vB;gc+=enA?vB:vA;});return gf-gc;}
