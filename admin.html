@@ -708,8 +708,7 @@ function updateJN(){
   const cur=jnEl.tagName==='SELECT'?jnEl.value:parseInt(jnEl.value);
   if(jnEl.tagName==='SELECT'){
     jnEl.innerHTML='<option value="">— selecciona —</option>'+
-      js.map(j=>'<option value="'+j.num+'"'+(j.num==cur?' selected':'')+'>J'+j.num+(j.fecha?' · '+j.fecha:'')+'</option>').join('')+
-      '<option value="'+nextNum+'"'+(cur==nextNum?' selected':'')+'>+ Nueva J'+nextNum+'</option>';
+      js.map(j=>'<option value="'+j.num+'"'+(j.num==cur?' selected':'')+'>J'+j.num+(j.fecha?' · '+j.fecha:'')+'</option>').join('');
   } else {jnEl.value=nextNum;}
 }
 
