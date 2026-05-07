@@ -722,11 +722,11 @@ function loadJornada(){
   if(j.turnos&&j.turnos.length)document.getElementById('jt').value=j.turnos.join('\n');
   if(j.canchas)document.getElementById('jc').value=j.canchas;
   const tempKey=lid+'_j'+num;
-  if(!scheduleAssignments[tempKey]){
-    const ms=S.partidos.filter(m=>m.jornadaId===j.id);
-    const asgn={};ms.forEach(m=>{if(m.turno&&m.cancha)asgn[m.turno+'_'+m.cancha]=m.grupo;});
-    scheduleAssignments[tempKey]=asgn;
-  }
+  // Always reload from Firebase partidos when selecting a jornada
+  const ms=S.partidos.filter(m=>m.jornadaId===j.id);
+  const asgn={};
+  ms.forEach(m=>{if(m.turno&&m.cancha)asgn[m.turno+'_'+m.cancha]=m.grupo;});
+  scheduleAssignments[tempKey]=asgn;
   renderScheduleGrid();
 }
 
