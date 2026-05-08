@@ -382,7 +382,7 @@ function renderPatrocinadoresHome(){
   const banners=(S.patrocinadores||[]).filter(p=>!p.liga&&p.bannerUrl);
   if(banners.length){
     bannerEl.innerHTML=banners.map(p=>
-      '<a href="'+(p.url||'#')+'" target="_blank" style="display:block;border-radius:14px;overflow:hidden;margin-bottom:.75rem;transition:transform .18s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">'+
+      '<a href="'+(p.url||'#')+'" target="_blank" style="display:block;border-radius:14px;overflow:hidden;margin-bottom:.75rem">'+
         '<img src="'+p.bannerUrl+'" alt="'+p.nombre+'" style="width:100%;max-height:200px;object-fit:cover;display:block">'+
       '</a>'
     ).join('');
