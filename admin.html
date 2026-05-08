@@ -215,39 +215,32 @@ select option{background:var(--dark);}
     <div id="at-ligas">
       <div id="ligas-list" style="margin-bottom:.85rem"></div>
       <button class="btn bp bsm" onclick="openM('m-liga')">+ Nueva Liga</button>
-    </div>
+    
+
+      <!-- BANNERS HERO -->
+      <div style="margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+          <div>
+            <div style="font-weight:700;font-size:.88rem">Banners Hero</div>
+            <div style="font-size:.72rem;color:var(--muted2)">Aparecen antes de las ligas en el home · Ratio 3:1 recomendado (1200×400px)</div>
+          </div>
+          <button class="btn bp bsm" onclick="openAddPatrocinador('banner')">+ Banner</button>
+        </div>
+        <div id="pat-banners-list"></div>
+      </div></div>
 
     <div id="at-patrocinadores" style="display:none">
       <div style="max-width:860px">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:2px;margin-bottom:.25rem">PATROCINADORES</div>
-        <div style="font-size:.74rem;color:var(--muted2);margin-bottom:1.25rem">Gestiona banners del home y logos por liga</div>
-
-        <!-- Banners hero home -->
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
-            <div>
-              <div style="font-weight:700;font-size:.9rem">Banners Hero</div>
-              <div style="font-size:.72rem;color:var(--muted2)">Aparecen antes de las ligas en el home · Ratio recomendado 3:1 (ej. 1200×400px)</div>
-            </div>
-            <button class="btn bp bsm" onclick="openAddPatrocinador('banner')">+ Banner</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
+          <div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:2px">LOGOS DE PATROCINADORES</div>
+            <div style="font-size:.74rem;color:var(--muted2);margin-top:.2rem">Logos para esta liga — aparecen en la app y en los imprimibles</div>
           </div>
-          <div id="pat-banners-list"></div>
+          <button class="btn bp bsm" onclick="openAddPatrocinador('logo')">+ Logo</button>
         </div>
-
-        <!-- Logos por liga -->
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
-            <div>
-              <div style="font-weight:700;font-size:.9rem">Logos por Liga</div>
-              <div style="font-size:.72rem;color:var(--muted2)">Aparecen dentro de la liga y en los imprimibles · Formato cuadrado o horizontal</div>
-            </div>
-            <button class="btn bp bsm" onclick="openAddPatrocinador('logo')">+ Logo</button>
-          </div>
-          <div id="pat-logos-list"></div>
-        </div>
+        <div id="pat-logos-list"></div>
       </div>
     </div>
-
     <div id="at-jugadores" style="display:none">
       <div style="background:linear-gradient(135deg,rgba(212,240,0,.07),rgba(0,229,158,.04));border:1px solid rgba(212,240,0,.2);border-radius:10px;padding:1rem 1.2rem;margin-bottom:1.1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
         <div style="font-size:1.8rem">📊</div>
