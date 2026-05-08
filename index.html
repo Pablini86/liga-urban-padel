@@ -20,6 +20,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script><!-- v3 -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 <style>
 :root{--black:#080808;--dark:#111;--card:#161616;--card2:#1c1c1c;--border:#242424;--border2:#303030;--accent:#d4f000;--accent2:#ff3b5c;--accent3:#00e59e;--text:#efefef;--muted:#505050;--muted2:#888;--gold:#ffd700;--silver:#b8b8b8;--bronze:#cd7f32;}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -178,6 +179,9 @@ td.tot{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;}
       <div class="empty-state"><div>🎾</div><p>Cargando ligas...</p></div>
     </div>
 
+    <!-- PATROCINADORES BANNER -->
+    <div id="patrocinadores-home" style="margin-top:1.5rem"></div>
+
     <!-- SPONSOR SECTION -->
     <div style="margin-top:2rem;background:linear-gradient(135deg,rgba(212,240,0,.06),rgba(0,229,158,.04));border:1px solid rgba(212,240,0,.15);border-radius:16px;padding:1.75rem 1.5rem;text-align:center">
       <div style="font-size:.65rem;font-weight:700;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:.5rem">Patrocina la Liga</div>
@@ -232,6 +236,7 @@ td.tot{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;}
     <div class="liga-header">
       <h1 id="liga-title">LIGA <em>XXIII</em></h1>
       <p id="liga-meta"></p>
+      <div id="liga-patrocinadores"></div>
     </div>
 
     <div class="liga-tabs">
@@ -299,7 +304,7 @@ firebase.initializeApp({
 const db = firebase.firestore();
 
 // STATE
-let S = {ligas:[],players:[],partidos:[],jornadas:[]};
+let S = {ligas:[],players:[],partidos:[],jornadas:[],patrocinadores:[]};
 let activeLigaId = null;
 
 // FIRESTORE
@@ -307,6 +312,7 @@ db.collection('ligas').onSnapshot(s=>{S.ligas=s.docs.map(d=>({id:d.id,...d.data(
 db.collection('players').onSnapshot(s=>{S.players=s.docs.map(d=>({id:d.id,...d.data()}));renderHome();if(activeLigaId)renderLiga(activeLigaId);});
 db.collection('partidos').onSnapshot(s=>{S.partidos=s.docs.map(d=>({id:d.id,...d.data()}));renderHome();if(activeLigaId)renderLiga(activeLigaId);});
 db.collection('jornadas').onSnapshot(s=>{S.jornadas=s.docs.map(d=>({id:d.id,...d.data()}));renderHome();if(activeLigaId)renderLiga(activeLigaId);});
+db.collection('patrocinadores').onSnapshot(s=>{S.patrocinadores=s.docs.map(d=>({id:d.id,...d.data()}));renderHome();if(activeLigaId)renderLiga(activeLigaId);});
 
 // HELPERS
 const pById=id=>S.players.find(x=>x.id===id);
@@ -361,6 +367,40 @@ function showLT(id,btn){
   if(id==='tabla'&&activeLigaId)renderTabla(activeLigaId);
   if(id==='jornadas'&&activeLigaId)renderJornadas(activeLigaId);
   if(id==='horarios'&&activeLigaId)renderHorarios(activeLigaId);
+}
+
+// PATROCINADORES
+function renderPatrocinadoresHome(){
+  const el=document.getElementById('patrocinadores-home');
+  if(!el)return;
+  // Global patrocinadores (no liga specific)
+  const global=S.patrocinadores.filter(p=>!p.liga);
+  if(!global.length){el.innerHTML='';return;}
+  el.innerHTML='<div style="margin-bottom:.5rem">'+
+    '<div style="font-size:.6rem;font-weight:700;letter-spacing:3px;color:var(--muted);text-transform:uppercase;text-align:center;margin-bottom:.85rem">Patrocinadores</div>'+
+    '<div style="display:flex;justify-content:center;align-items:center;gap:1.5rem;flex-wrap:wrap">'+
+      global.map(p=>
+        '<a href="'+(p.url||'#')+'" target="_blank" style="display:flex;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.75rem 1.25rem;transition:border-color .15s;text-decoration:none" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">'+
+          '<img src="'+p.logoUrl+'" alt="'+p.nombre+'" style="height:40px;max-width:120px;object-fit:contain;filter:brightness(0) invert(1);opacity:.8">'+
+        '</a>'
+      ).join('')+
+    '</div>'+
+  '</div>';
+}
+
+function renderPatrocinadoresLiga(lid){
+  const pats=S.patrocinadores.filter(p=>p.liga===lid);
+  if(!pats.length)return'';
+  return '<div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">'+
+    '<div style="font-size:.6rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.65rem">Patrocinadores</div>'+
+    '<div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center">'+
+      pats.map(p=>
+        '<a href="'+(p.url||'#')+'" target="_blank" style="display:flex;align-items:center;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:.5rem .85rem;text-decoration:none;transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">'+
+          '<img src="'+p.logoUrl+'" alt="'+p.nombre+'" style="height:28px;max-width:80px;object-fit:contain;filter:brightness(0) invert(1);opacity:.75">'+
+        '</a>'
+      ).join('')+
+    '</div>'+
+  '</div>';
 }
 
 // HOME
@@ -442,6 +482,9 @@ function renderLiga(lid){
   const parts=liga.nombre.split(' ');
   document.getElementById('liga-title').innerHTML=parts.slice(0,-1).join(' ')+' <em>'+parts.slice(-1)+'</em>';
   document.getElementById('liga-meta').textContent=(liga.dia||'')+(liga.cat?' · '+liga.cat:'')+(liga.inicio?' · '+liga.inicio:'');
+  // Show liga patrocinadores in header
+  const patEl=document.getElementById('liga-patrocinadores');
+  if(patEl)patEl.innerHTML=renderPatrocinadoresLiga(lid);
   renderInicio(lid);
 }
 
