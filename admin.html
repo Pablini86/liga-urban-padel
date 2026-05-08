@@ -219,14 +219,32 @@ select option{background:var(--dark);}
 
     <div id="at-patrocinadores" style="display:none">
       <div style="max-width:860px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
-          <div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:2px">PATROCINADORES</div>
-            <div style="font-size:.74rem;color:var(--muted2);margin-top:.2rem">Logos y banners que aparecen en la app y en los imprimibles</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:2px;margin-bottom:.25rem">PATROCINADORES</div>
+        <div style="font-size:.74rem;color:var(--muted2);margin-bottom:1.25rem">Gestiona banners del home y logos por liga</div>
+
+        <!-- Banners hero home -->
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+            <div>
+              <div style="font-weight:700;font-size:.9rem">Banners Hero</div>
+              <div style="font-size:.72rem;color:var(--muted2)">Aparecen antes de las ligas en el home · Ratio recomendado 3:1 (ej. 1200×400px)</div>
+            </div>
+            <button class="btn bp bsm" onclick="openAddPatrocinador('banner')">+ Banner</button>
           </div>
-          <button class="btn bp bsm" onclick="openAddPatrocinador()">+ Agregar patrocinador</button>
+          <div id="pat-banners-list"></div>
         </div>
-        <div id="patrocinadores-list"></div>
+
+        <!-- Logos por liga -->
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+            <div>
+              <div style="font-weight:700;font-size:.9rem">Logos por Liga</div>
+              <div style="font-size:.72rem;color:var(--muted2)">Aparecen dentro de la liga y en los imprimibles · Formato cuadrado o horizontal</div>
+            </div>
+            <button class="btn bp bsm" onclick="openAddPatrocinador('logo')">+ Logo</button>
+          </div>
+          <div id="pat-logos-list"></div>
+        </div>
       </div>
     </div>
 
@@ -441,13 +459,19 @@ select option{background:var(--dark);}
 <div class="mo" id="m-patrocinador">
   <div class="modal" style="max-width:500px">
     <button class="mc" onclick="closeM('m-patrocinador')">&#x2715;</button>
-    <h2>NUEVO <em>PATROCINADOR</em></h2>
+    <h2 id="pat-modal-title">NUEVO <em>PATROCINADOR</em></h2>
+    <input type="hidden" id="pat-mode" value="banner">
     <div class="fg">
       <div class="fi full"><label>Nombre</label><input id="pat-nombre" placeholder="B·LIFE Suplementos"></div>
       <div class="fi full"><label>URL (sitio web)</label><input id="pat-url" placeholder="https://blife.mx" type="url"></div>
-      <div class="fi full"><label>Liga (vacío = aparece en todas)</label><select id="pat-liga"><option value="">Todas las ligas</option></select></div>
+      <div class="fi full" id="pat-liga-wrap"><label>Liga</label><select id="pat-liga"><option value="">Todas las ligas</option></select></div>
+      <div class="fi full" id="pat-hint" style="display:none">
+        <div style="background:rgba(212,240,0,.06);border:1px solid rgba(212,240,0,.15);border-radius:7px;padding:.6rem .85rem;font-size:.75rem;color:var(--muted2)">
+          📐 Ratio recomendado <b style="color:var(--accent)">3:1</b> — ejemplo: 1200×400px o 900×300px
+        </div>
+      </div>
       <div class="fi full">
-        <label>Logo</label>
+        <label id="pat-file-label">Imagen</label>
         <div style="border:2px dashed var(--border2);border-radius:8px;padding:1.2rem;text-align:center;cursor:pointer;transition:border-color .15s" id="pat-drop-zone" onclick="document.getElementById('pat-file').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--border2)'" ondrop="handlePatDrop(event)">
           <input type="file" id="pat-file" accept="image/*" style="display:none" onchange="previewPat(this)">
           <div id="pat-preview" style="display:none;margin-bottom:.5rem"><img id="pat-preview-img" style="max-height:80px;max-width:200px;object-fit:contain;border-radius:4px"></div>
@@ -1365,36 +1389,52 @@ async function delRestriccion(id){
 
 // ═══ PATROCINADORES ═══
 function renderPatrocinadores(){
-  const el=document.getElementById('patrocinadores-list');
-  if(!el)return;
-  const pats=S.patrocinadores;
-  if(!pats.length){
-    el.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted2);font-size:.85rem">Sin patrocinadores — agrega el primero</div>';
-    return;
-  }
-  el.innerHTML=pats.map(function(p){
+  const bannerEl=document.getElementById('pat-banners-list');
+  const logoEl=document.getElementById('pat-logos-list');
+  if(!bannerEl&&!logoEl)return;
+
+  function patCard(p){
     const ligaNombre=p.liga?((S.ligas.find(l=>l.id===p.liga)||{}).nombre||p.liga):'Todas las ligas';
-    return '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:.65rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">'+
-      (p.logoUrl?'<img src="'+p.logoUrl+'" style="height:48px;max-width:100px;object-fit:contain;border-radius:6px;background:var(--card2);padding:4px">':'<div style="width:48px;height:48px;background:var(--border2);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.5rem">🤝</div>')+
-      '<div style="flex:1">'+
-        '<div style="font-weight:700;font-size:.95rem">'+p.nombre+'</div>'+
-        '<div style="font-size:.72rem;color:var(--muted2);margin-top:.15rem">'+ligaNombre+'</div>'+
-        (p.url?'<a href="'+p.url+'" target="_blank" style="font-size:.7rem;color:var(--accent);text-decoration:none">'+p.url+'</a>':'')+
+    const imgUrl=p.bannerUrl||p.logoUrl||'';
+    return '<div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:.55rem">'+
+      (p.bannerUrl?'<img src="'+p.bannerUrl+'" style="width:100%;max-height:100px;object-fit:cover;display:block">':'')+
+      '<div style="padding:.75rem 1rem;display:flex;align-items:center;gap:.85rem">'+
+        (p.logoUrl&&!p.bannerUrl?'<img src="'+p.logoUrl+'" style="height:40px;max-width:90px;object-fit:contain;background:var(--border2);border-radius:5px;padding:3px">':'')+
+        '<div style="flex:1">'+
+          '<div style="font-weight:700;font-size:.88rem">'+p.nombre+'</div>'+
+          '<div style="font-size:.7rem;color:var(--muted2)">'+ligaNombre+'</div>'+
+          (p.url?'<a href="'+p.url+'" target="_blank" style="font-size:.68rem;color:var(--accent);text-decoration:none">'+p.url+'</a>':'')+
+        '</div>'+
+        '<button class="btn bd bxs" data-pid="'+p.id+'" data-banner="'+(p.bannerUrl||'')+'" data-logo="'+(p.logoUrl||'')+'" onclick="delPatrocinador(this.dataset.pid,this.dataset.banner,this.dataset.logo)">✕</button>'+
       '</div>'+
-      '<button class="btn bd bxs" data-pid="'+p.id+'" data-logo="'+(p.logoUrl||'')+'" onclick="delPatrocinador(this.dataset.pid,this.dataset.logo)">✕</button>'+
     '</div>';
-  }).join('');
+  }
+
+  const banners=S.patrocinadores.filter(p=>p.tipo==='banner'||p.bannerUrl);
+  const logos=S.patrocinadores.filter(p=>p.tipo==='logo'||(!p.bannerUrl&&p.logoUrl));
+
+  if(bannerEl) bannerEl.innerHTML=banners.length?banners.map(patCard).join(''):'<div style="font-size:.78rem;color:var(--muted2);padding:.5rem 0">Sin banners — agrega el primero</div>';
+  if(logoEl) logoEl.innerHTML=logos.length?logos.map(patCard).join(''):'<div style="font-size:.78rem;color:var(--muted2);padding:.5rem 0">Sin logos — agrega el primero</div>';
 }
 
-function openAddPatrocinador(){
+function openAddPatrocinador(mode){
+  mode=mode||'banner';
+  document.getElementById('pat-mode').value=mode;
+  const isBanner=mode==='banner';
+  document.getElementById('pat-modal-title').innerHTML=isBanner?'NUEVO <em>BANNER</em>':'NUEVO <em>LOGO DE LIGA</em>';
+  document.getElementById('pat-file-label').textContent=isBanner?'Imagen banner (3:1 recomendado)':'Logo';
+  document.getElementById('pat-hint').style.display=isBanner?'':'none';
+  // For banner: liga = null (global). For logo: pick liga
+  const ligaWrap=document.getElementById('pat-liga-wrap');
+  ligaWrap.style.display=isBanner?'none':'';
   const ligaSel=document.getElementById('pat-liga');
-  ligaSel.innerHTML='<option value="">Todas las ligas</option>'+
-    S.ligas.map(l=>'<option value="'+l.id+'">'+l.nombre+'</option>').join('');
+  ligaSel.innerHTML='<option value="">— selecciona liga —</option>'+
+    S.ligas.map(l=>'<option value="'+l.id+'"'+(l.id===getActiveLiga()?' selected':'')+'>'+l.nombre+'</option>').join('');
   document.getElementById('pat-nombre').value='';
   document.getElementById('pat-url').value='';
   document.getElementById('pat-logo-url').value='';
   document.getElementById('pat-preview').style.display='none';
-  document.getElementById('pat-drop-label').textContent='📁 Click o arrastra tu logo aquí';
+  document.getElementById('pat-drop-label').textContent='📁 Click o arrastra la imagen aquí';
   document.getElementById('pat-upload-progress').style.display='none';
   openM('m-patrocinador');
 }
@@ -1456,29 +1496,35 @@ function uploadPatLogo(file){
 async function savePatrocinador(){
   const nombre=document.getElementById('pat-nombre').value.trim();
   if(!nombre){toast('Escribe el nombre',1);return;}
-  const logoUrl=document.getElementById('pat-logo-url').value;
-  if(!logoUrl){toast('Sube un logo primero',1);return;}
+  const imgUrl=document.getElementById('pat-logo-url').value;
+  if(!imgUrl){toast('Sube una imagen primero',1);return;}
+  const mode=document.getElementById('pat-mode').value;
+  const isBanner=mode==='banner';
+  const liga=isBanner?null:(document.getElementById('pat-liga').value||null);
+  if(!isBanner&&!liga){toast('Selecciona una liga',1);return;}
   const p={
     id:uid(),
     nombre,
+    tipo:mode,
     url:document.getElementById('pat-url').value.trim(),
-    liga:document.getElementById('pat-liga').value||null,
-    logoUrl,
+    liga,
+    [isBanner?'bannerUrl':'logoUrl']:imgUrl,
     fecha:new Date().toISOString().slice(0,10)
   };
   await fsSet('patrocinadores',p.id,p);
   closeM('m-patrocinador');
-  toast('✓ Patrocinador guardado');
+  toast(isBanner?'✓ Banner guardado':'✓ Logo guardado');
 }
 
-async function delPatrocinador(id,logoUrl){
-  if(!confirm('¿Eliminar patrocinador?'))return;
+async function delPatrocinador(id,bannerUrl,logoUrl){
+  if(!confirm('Eliminar?'))return;
   await fsDel('patrocinadores',id);
-  // Also delete from Storage if we have the URL
-  if(logoUrl){
-    try{await storage.refFromURL(logoUrl).delete();}catch(e){}
+  for(const url of [bannerUrl,logoUrl]){
+    if(url&&url.startsWith('https://firebasestorage')){
+      try{await storage.refFromURL(url).delete();}catch(e){}
+    }
   }
-  toast('Patrocinador eliminado');
+  toast('Eliminado');
 }
 
 // ═══ UTILS ═══
