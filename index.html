@@ -179,8 +179,8 @@ td.tot{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;}
       <div class="empty-state"><div>🎾</div><p>Cargando ligas...</p></div>
     </div>
 
-    <!-- HERO BANNERS PATROCINADORES -->
-    <div id="patrocinadores-banners" style="margin-top:1.5rem"></div>
+    <!-- HERO BANNERS CARRUSEL -->
+    <div id="patrocinadores-banners" style="margin-top:1.5rem;position:relative"></div>
 
     <!-- CTA PATROCINAR (estatico) -->
     <div id="cta-patrocinar" style="margin-top:1rem;background:linear-gradient(135deg,rgba(212,240,0,.06),rgba(0,229,158,.04));border:1px solid rgba(212,240,0,.15);border-radius:16px;padding:1.75rem 1.5rem;text-align:center">
@@ -374,23 +374,62 @@ function showLT(id,btn){
 }
 
 // PATROCINADORES
+let _carruselIdx=0, _carruselTimer=null;
+
 function renderPatrocinadoresHome(){
-  // Hero banners (patrocinadores con bannerUrl)
   const bannerEl=document.getElementById('patrocinadores-banners');
   const ctaEl=document.getElementById('cta-patrocinar');
   if(!bannerEl)return;
   const banners=(S.patrocinadores||[]).filter(p=>!p.liga&&p.bannerUrl);
-  if(banners.length){
-    bannerEl.innerHTML=banners.map(p=>
-      '<a href="'+(p.url||'#')+'" target="_blank" style="display:block;border-radius:14px;overflow:hidden;margin-bottom:.75rem">'+
-        '<img src="'+p.bannerUrl+'" alt="'+p.nombre+'" style="width:100%;max-height:200px;object-fit:cover;display:block">'+
-      '</a>'
-    ).join('');
-    if(ctaEl)ctaEl.style.display='none'; // hide CTA if we have real sponsors
-  } else {
+  if(!banners.length){
     bannerEl.innerHTML='';
     if(ctaEl)ctaEl.style.display='';
+    return;
   }
+  if(ctaEl)ctaEl.style.display='none';
+  if(_carruselTimer)clearInterval(_carruselTimer);
+  _carruselIdx=0;
+
+  bannerEl.innerHTML=
+    '<div style="position:relative;border-radius:14px;overflow:hidden;background:var(--card)">'+
+      '<div id="car-track" style="display:flex;transition:transform .5s cubic-bezier(.4,0,.2,1)">'+
+        banners.map(p=>
+          '<a href="'+(p.url||'#')+'" target="_blank" style="min-width:100%;display:block;flex-shrink:0">'+
+            '<img src="'+p.bannerUrl+'" alt="'+p.nombre+'" style="width:100%;max-height:220px;object-fit:cover;display:block">'+
+          '</a>'
+        ).join('')+
+      '</div>'+
+      // Prev/next arrows (only if >1)
+      (banners.length>1?
+        '<button onclick="carMove(-1)" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.55);border:none;color:#fff;width:36px;height:36px;border-radius:50%;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)">&#8249;</button>'+
+        '<button onclick="carMove(1)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.55);border:none;color:#fff;width:36px;height:36px;border-radius:50%;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)">&#8250;</button>':'')+
+      // Dots
+      (banners.length>1?
+        '<div id="car-dots" style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px">'+
+          banners.map((_,i)=>'<div onclick="carGo('+i+')" style="width:7px;height:7px;border-radius:50%;background:'+(i===0?'var(--accent)':'rgba(255,255,255,.4)')+';cursor:pointer;transition:background .3s"></div>').join('')+
+        '</div>':'')+
+    '</div>';
+
+  if(banners.length>1){
+    _carruselTimer=setInterval(()=>carMove(1), 4500);
+  }
+}
+
+function carMove(dir){
+  const banners=(S.patrocinadores||[]).filter(p=>!p.liga&&p.bannerUrl);
+  _carruselIdx=(_carruselIdx+dir+banners.length)%banners.length;
+  carGo(_carruselIdx);
+}
+
+function carGo(idx){
+  const banners=(S.patrocinadores||[]).filter(p=>!p.liga&&p.bannerUrl);
+  _carruselIdx=idx;
+  const track=document.getElementById('car-track');
+  if(track)track.style.transform='translateX(-'+idx+'00%)';
+  const dots=document.querySelectorAll('#car-dots div');
+  dots.forEach((d,i)=>d.style.background=i===idx?'var(--accent)':'rgba(255,255,255,.4)');
+  if(_carruselTimer)clearInterval(_carruselTimer);
+  if(banners.length>1)_carruselTimer=setInterval(()=>carMove(1),4500);
 }
 
 
