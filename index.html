@@ -321,7 +321,8 @@ db.collection('patrocinadores').onSnapshot(s=>{
 // HELPERS
 const pById=id=>S.players.find(x=>x.id===id);
 const pName=id=>{const p=pById(id);return p?p.nombre:'?';};
-const pFirst=id=>{const p=pById(id);return p?p.nombre.split(' ')[0]:'?';};
+function pShort(n){if(!n)return'?';const w=n.trim().split(/ +/);return w.length>=2?w[0]+' '+w[1]:w[0];}
+const pFirst=id=>{const p=pById(id);return p?pShort(p.nombre):'?';};
 
 function calcPts(pid,lid,jid){
   const ms=S.partidos.filter(m=>m.jornadaId===jid&&m.finalizado&&[m.a1,m.a2,m.b1,m.b2].includes(pid));
@@ -583,7 +584,7 @@ function renderInicio(lid){
               <span style="font-family:'Bebas Neue',sans-serif;color:var(--accent);font-size:.9rem">G${grupo}</span>
               <span style="color:var(--muted2);margin:0 .3rem">·</span>
               <span style="color:var(--muted2)">${cancha}</span>
-              <div style="font-size:.65rem;color:var(--muted2);margin-top:.1rem">${gps.map(p=>p.nombre.split(' ')[0]).join(' · ')}</div>
+              <div style="font-size:.65rem;color:var(--muted2);margin-top:.1rem">${gps.map(p=>pShort(p.nombre)).join(' · ')}</div>
             </div>`;
           }).join('')}
         </div>
@@ -736,7 +737,7 @@ function renderJornadaFixture(jId,lid){
         <span style="font-size:.68rem;color:var(--muted2)">${gms[0]?.cancha||''} · ${gms[0]?.turno||''}</span>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.5rem">
-        ${gps.map(p=>`<span style="background:var(--card2);border:1px solid var(--border);border-radius:5px;padding:2px 8px;font-size:.75rem;font-weight:500">${p.nombre.split(' ')[0]}</span>`).join('')}
+        ${gps.map(p=>`<span style="background:var(--card2);border:1px solid var(--border);border-radius:5px;padding:2px 8px;font-size:.75rem;font-weight:500">${pShort(p.nombre)}</span>`).join('')}
       </div>
       ${gms.map(m=>`<div style="display:flex;align-items:center;gap:.4rem;font-size:.75rem;padding:.3rem 0;border-top:1px solid var(--border)">
         <span style="font-size:.6rem;color:var(--muted);min-width:32px">Set ${m.set}</span>
@@ -904,7 +905,7 @@ function openPlayer(pid,lid){
   const rank=st.findIndex(x=>x.player.id===pid)+1;
 
   document.getElementById('modal-content').innerHTML=`
-    <h2>${p.nombre.split(' ')[0]} <em>${p.nombre.split(' ').slice(1).join(' ')}</em></h2>
+    <h2>${pShort(p.nombre)} <em>${p.nombre.split(' ').slice(1).join(' ')}</em></h2>
     <div style="display:flex;gap:.65rem;flex-wrap:wrap;margin-bottom:1.1rem">
       <span style="font-size:.75rem;color:var(--muted2)">Grupo ${p.grupo} · ${p.cat||''}</span>
       <span style="font-size:.75rem;color:var(--accent);font-weight:700">#${rank} en tabla</span>
