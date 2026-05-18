@@ -615,7 +615,11 @@ function calcPtsJornada(pid,lid,jid){
 function calcTotal(pid,lid){return S.jornadas.filter(j=>j.liga===lid).reduce((acc,j)=>{const p=calcPtsJornada(pid,lid,j.id);return p!==null?acc+p:acc;},0);}
 function calcGlobal(lid){return S.players.filter(p=>p.liga===lid).map(p=>({player:p,total:calcTotal(p.id,lid)})).sort((a,b)=>b.total-a.total);}
 function calcGroupPos(lid,g,jid){
-  const mapped=S.players.filter(p=>p.liga===lid&&p.grupo===g).map(p=>({
+  // Use grupo snapshot for the jornada if available, otherwise use current grupo
+  const jornada=S.jornadas.find(j=>j.id===jid);
+  const jnum=jornada?.num||1;
+  const grupoKey='grupo_j'+jnum;
+  const mapped=S.players.filter(p=>p.liga===lid&&((p[grupoKey]||p.grupo)===g)).map(p=>({
     player:p,
     pts:calcPtsJornada(p.id,lid,jid)||0,
     total:calcTotal(p.id,lid),
@@ -800,7 +804,10 @@ function renderScheduleGrid(){
   if(!lid){document.getElementById('sched-grid-container').innerHTML='';return;}
   const turnos=document.getElementById('jt').value.split('\n').map(t=>t.trim()).filter(Boolean);
   const canchas=parseInt(document.getElementById('jc').value)||6;
-  const grupos=[...new Set(S.players.filter(p=>p.liga===lid).map(p=>p.grupo))].sort((a,b)=>a-b);
+  const jornada4promo=S.jornadas.find(j=>j.id===jId);
+  const jnum4promo=jornada4promo?.num||1;
+  const gkey='grupo_j'+jnum4promo;
+  const grupos=[...new Set(S.players.filter(p=>p.liga===lid).map(p=>p[gkey]||p.grupo))].sort((a,b)=>a-b);
   const jnum=parseInt(document.getElementById('jn').value)||1;
   const tempKey=lid+'_j'+jnum;
   if(!scheduleAssignments[tempKey])scheduleAssignments[tempKey]={};
