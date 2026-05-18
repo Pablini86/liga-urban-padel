@@ -618,8 +618,9 @@ function calcGroupPos(lid,g,jid){
   // Use grupo snapshot for the jornada if available, otherwise use current grupo
   const jornada=S.jornadas.find(j=>j.id===jid);
   const jnum=jornada?.num||1;
-  const grupoKey='grupo_j'+jnum;
-  const mapped=S.players.filter(p=>p.liga===lid&&((p[grupoKey]||p.grupo)===g)).map(p=>({
+  const hasPartidos=S.partidos.some(p=>p.jornadaId===jid);
+  const grupoKey=hasPartidos?('grupo_j'+jnum):null;
+  const mapped=S.players.filter(p=>p.liga===lid&&((grupoKey?p[grupoKey]:null)||p.grupo)===g).map(p=>({
     player:p,
     pts:calcPtsJornada(p.id,lid,jid)||0,
     total:calcTotal(p.id,lid),
@@ -928,11 +929,14 @@ function renderPromoP(){
     renderPromoHist(lid);
     return;
   }
+  // Check if selected jornada has partidos (played) or is just created (J2 without matches)
+  const jornadaHasPartidos=S.partidos.some(p=>p.jornadaId===jId);
   const n=parseInt(document.getElementById('prn')?.value)||1;
   const jornada4promo=S.jornadas.find(j=>j.id===jId);
   const jnum4promo=jornada4promo?.num||1;
-  const gkey='grupo_j'+jnum4promo;
-  const grupos=[...new Set(S.players.filter(p=>p.liga===lid).map(p=>p[gkey]||p.grupo))].sort((a,b)=>a-b);
+  // If jornada has partidos use snapshot, else use current grupo (new jornada)
+  const gkey=jornadaHasPartidos?('grupo_j'+jnum4promo):null;
+  const grupos=[...new Set(S.players.filter(p=>p.liga===lid).map(p=>(gkey?p[gkey]:null)||p.grupo))].sort((a,b)=>a-b);
   const nextNum=Math.max(...S.jornadas.filter(j=>j.liga===lid).map(j=>j.num),0)+1;
 
   // Check if this promo already applied
@@ -1102,8 +1106,16 @@ async function applyAndCreateJornada(){
   }
   document.getElementById('promo-actions').style.display='none';
   renderPromoHist(lid);
-  // Wire edit buttons
-
+  // Switch dropdown to show J2 and re-render promo
+  setTimeout(()=>{
+    const prjEl=document.getElementById('prj');
+    if(prjEl){
+      // Find the new jornada
+      const newJ=S.jornadas.find(j=>j.liga===lid&&j.num===nextNum);
+      if(newJ) prjEl.value=newJ.id;
+    }
+    renderPromoP();
+  }, 800);
 }
 
 function enableHorarioEdit(){
