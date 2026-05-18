@@ -1330,6 +1330,19 @@ async function delPatrocinador(id,bannerUrl,logoUrl){
   toast('Eliminado');
 }
 
+function renderPromoHist(lid){
+  const el=document.getElementById('promo-hist');
+  if(!el)return;
+  const promos=(S.promociones||[]).filter(p=>p.liga===lid).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  if(!promos.length){el.innerHTML='';return;}
+  el.innerHTML='<div style="margin-top:1rem;font-size:.63rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.5rem">Historial</div>'+
+    promos.map(p=>{
+      const j=S.jornadas.find(x=>x.id===p.jornadaId);
+      return '<div style="font-size:.78rem;color:var(--muted2);padding:.3rem 0;border-bottom:1px solid var(--border)">'+
+        'J'+(j?.num||'?')+' · '+p.fecha+' · '+p.moves?.length+' movimientos</div>';
+    }).join('');
+}
+
 // ═══ UTILS ═══
 function openM(id){document.getElementById(id).classList.add('open');}
 function closeM(id){document.getElementById(id).classList.remove('open');}
