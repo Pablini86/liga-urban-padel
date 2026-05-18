@@ -804,10 +804,7 @@ function renderScheduleGrid(){
   if(!lid){document.getElementById('sched-grid-container').innerHTML='';return;}
   const turnos=document.getElementById('jt').value.split('\n').map(t=>t.trim()).filter(Boolean);
   const canchas=parseInt(document.getElementById('jc').value)||6;
-  const jornada4promo=S.jornadas.find(j=>j.id===jId);
-  const jnum4promo=jornada4promo?.num||1;
-  const gkey='grupo_j'+jnum4promo;
-  const grupos=[...new Set(S.players.filter(p=>p.liga===lid).map(p=>p[gkey]||p.grupo))].sort((a,b)=>a-b);
+  const grupos=[...new Set(S.players.filter(p=>p.liga===lid).map(p=>p.grupo))].sort((a,b)=>a-b);
   const jnum=parseInt(document.getElementById('jn').value)||1;
   const tempKey=lid+'_j'+jnum;
   if(!scheduleAssignments[tempKey])scheduleAssignments[tempKey]={};
@@ -932,7 +929,10 @@ function renderPromoP(){
     return;
   }
   const n=parseInt(document.getElementById('prn')?.value)||1;
-  const grupos=[...new Set(S.players.filter(p=>p.liga===lid).map(p=>p.grupo))].sort((a,b)=>a-b);
+  const jornada4promo=S.jornadas.find(j=>j.id===jId);
+  const jnum4promo=jornada4promo?.num||1;
+  const gkey='grupo_j'+jnum4promo;
+  const grupos=[...new Set(S.players.filter(p=>p.liga===lid).map(p=>p[gkey]||p.grupo))].sort((a,b)=>a-b);
   const nextNum=(S.jornadas.filter(j=>j.liga===lid).length)+1;
 
   // Check if this promo already applied
