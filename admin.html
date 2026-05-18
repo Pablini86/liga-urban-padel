@@ -1147,12 +1147,23 @@ async function applyAndCreateJornada(){
 
   const ops=[];
 
-  // 1. Apply group changes to players
+  // 1. Apply group changes - save snapshot of current groups AND new groups
   const newGroups={};
   moves.forEach(mv=>{newGroups[mv.pid]=mv.to;});
+  const jornadaRef=S.jornadas.find(j=>j.id===jId);
+  const currentJNum=jornadaRef?.num||1;
+  const nextNum2=(S.jornadas.filter(j=>j.liga===lid).length)+1;
+
   S.players.filter(p=>p.liga===lid).forEach(p=>{
     const newG=newGroups[p.id]||p.grupo;
-    const updated={...p,grupo:newG};
+    const updated={...p,
+      // Save snapshot of old group for this jornada
+      ['grupo_j'+currentJNum]:p.grupo,
+      // New group for next jornada
+      ['grupo_j'+nextNum2]:newG,
+      // grupo field = new group (for next jornada)
+      grupo:newG
+    };
     ops.push({op:'set',col:'players',id:p.id,data:updated});
   });
 
@@ -1169,10 +1180,10 @@ async function applyAndCreateJornada(){
   ops.push({op:'set',col:'promociones',id:promo.id,data:promo});
 
   // 4. Create new jornada (empty, no matches yet)
-  const nextNum=(S.jornadas.filter(j=>j.liga===lid).length)+1;
+  const nextNum=nextNum2;
   const jornada=S.jornadas.find(j=>j.id===jId);
   const newJId=uid();
-  const newJ={id:newJId,liga:lid,num:nextNum,fecha:'',canchas:jornada?.canchas||6,turnos:jornada?.turnos||['18:00','19:15','20:30','21:45']};
+  const newJ={id:newJId,liga:lid,num:nextNum,fecha:'',canchas:jornadaRef?.canchas||6,turnos:jornadaRef?.turnos||['18:00','19:15','20:30','21:45']};
   ops.push({op:'set',col:'jornadas',id:newJId,data:newJ});
 
   await fsBatch(ops);
