@@ -639,7 +639,7 @@ async function fsBatch(ops){const b=db.batch();ops.forEach(({op,col,id,data})=>{
 
 // ═══ ADMIN UI ═══
 function renderAdmin(){renderLigasAdmin();if(S.activeLiga){renderPlist();renderDrag();populateSels();updateJN();renderCaptura();renderPromoP();renderImpPrev();renderScheduleGrid();}}
-function showAT(id,btn){document.querySelectorAll('[id^="at-"]').forEach(e=>e.style.display='none');document.querySelectorAll('.it').forEach(t=>t.classList.remove('active'));document.getElementById('at-'+id).style.display='';btn.classList.add('active');if(id==='jornada')renderScheduleGrid();if(id==='imprimir'){populateSels();renderImpPrev();}if(id==='resultados'){populateSels();renderCaptura();}if(id==='promociones'){populateSels();renderPromoP();}if(id==='restricciones')renderRestricciones();if(id==='patrocinadores')renderPatrocinadores();}
+function showAT(id,btn){document.querySelectorAll('[id^="at-"]').forEach(e=>e.style.display='none');document.querySelectorAll('.it').forEach(t=>t.classList.remove('active'));document.getElementById('at-'+id).style.display='';btn.classList.add('active');if(id==='jornada')renderScheduleGrid();if(id==='imprimir'){populateSels();renderImpPrev();}if(id==='resultados'){populateSels();renderCaptura();}if(id==='promociones'){populateSels();renderPromoP();}if(id==='restricciones')renderRestricciones();if(id==='patrocinadores')renderPatrocinadores();if(id==='promociones'){populateSels();renderPromoP();}}
 function renderLigasAdmin(){
   const el=document.getElementById('ligas-list');
   if(!el)return;
@@ -765,7 +765,7 @@ function populateSels(){
   const imjEl=document.getElementById('imj');
   if(imjEl){const js=S.jornadas.filter(j=>j.liga===lid).sort((a,b)=>a.num-b.num);const cur=imjEl.value;imjEl.innerHTML='<option value="">— selecciona —</option>'+js.map(j=>'<option value="'+j.id+'"'+(j.id===cur?' selected':'')+'>J'+j.num+' · '+j.fecha+'</option>').join('');if(!imjEl.value&&js.length)imjEl.value=js[0].id;}
   const prjEl=document.getElementById('prj');
-  if(prjEl){const js=S.jornadas.filter(j=>j.liga===lid&&S.partidos.some(p=>p.jornadaId===j.id)).sort((a,b)=>b.num-a.num);const cur=prjEl.value;prjEl.innerHTML='<option value="">— selecciona —</option>'+js.map(j=>'<option value="'+j.id+'"'+(j.id===cur?' selected':'')+'>J'+j.num+' · '+(j.fecha||'')+'</option>').join('');if(!prjEl.value&&js.length)prjEl.value=js[0].id;}
+  if(prjEl){const js=S.jornadas.filter(j=>j.liga===lid).sort((a,b)=>b.num-a.num);const cur=prjEl.value;prjEl.innerHTML='<option value="">— selecciona —</option>'+js.map(j=>'<option value="'+j.id+'"'+(j.id===cur?' selected':'')+'>J'+j.num+' · '+(j.fecha||'')+'</option>').join('');if(!prjEl.value&&js.length)prjEl.value=js[0].id;}
 }
 
 function updateJN(){
