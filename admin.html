@@ -760,7 +760,7 @@ function populateSels(){
   const imjEl=document.getElementById('imj');
   if(imjEl){const js=S.jornadas.filter(j=>j.liga===lid).sort((a,b)=>a.num-b.num);const cur=imjEl.value;imjEl.innerHTML='<option value="">— selecciona —</option>'+js.map(j=>'<option value="'+j.id+'"'+(j.id===cur?' selected':'')+'>J'+j.num+' · '+j.fecha+'</option>').join('');if(!imjEl.value&&js.length)imjEl.value=js[0].id;}
   const prjEl=document.getElementById('prj');
-  if(prjEl){const js=S.jornadas.filter(j=>j.liga===lid&&S.partidos.some(p=>p.jornadaId===j.id)).sort((a,b)=>b.num-a.num);const cur=prjEl.value;prjEl.innerHTML='<option value="">— selecciona —</option>'+js.map(j=>'<option value="'+j.id+'"'+(j.id===cur?' selected':'')+'>J'+j.num+' · '+j.fecha+'</option>').join('');}
+  if(prjEl){const js=S.jornadas.filter(j=>j.liga===lid&&S.partidos.some(p=>p.jornadaId===j.id)).sort((a,b)=>b.num-a.num);const cur=prjEl.value;prjEl.innerHTML='<option value="">— selecciona —</option>'+js.map(j=>'<option value="'+j.id+'"'+(j.id===cur?' selected':'')+'>J'+j.num+' · '+(j.fecha||'')+'</option>').join('');if(!prjEl.value&&js.length)prjEl.value=js[0].id;}
 }
 
 function updateJN(){
@@ -912,7 +912,8 @@ function renderPromoP(){
   if(lid&&jSel){
     const js=S.jornadas.filter(j=>j.liga===lid&&S.partidos.some(p=>p.jornadaId===j.id)).sort((a,b)=>b.num-a.num);
     const cur=jSel.value;
-    jSel.innerHTML='<option value="">— selecciona —</option>'+js.map(j=>`<option value="${j.id}"${j.id===cur?' selected':''}>J${j.num} · ${j.fecha}</option>`).join('');
+    jSel.innerHTML='<option value="">— selecciona —</option>'+js.map(j=>'<option value="'+j.id+'"'+(j.id===cur?' selected':'')+'>J'+j.num+' · '+(j.fecha||'')+'</option>').join('');
+    if(!jSel.value&&js.length)jSel.value=js[0].id;
   }
   const jId=document.getElementById('prj')?.value;
   const actEl=document.getElementById('promo-actions');
