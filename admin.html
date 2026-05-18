@@ -933,7 +933,7 @@ function renderPromoP(){
   const jnum4promo=jornada4promo?.num||1;
   const gkey='grupo_j'+jnum4promo;
   const grupos=[...new Set(S.players.filter(p=>p.liga===lid).map(p=>p[gkey]||p.grupo))].sort((a,b)=>a-b);
-  const nextNum=(S.jornadas.filter(j=>j.liga===lid).length)+1;
+  const nextNum=Math.max(...S.jornadas.filter(j=>j.liga===lid).map(j=>j.num),0)+1;
 
   // Check if this promo already applied
   const existing=S.promociones.find(p=>p.liga===lid&&p.jornadaId===jId);
