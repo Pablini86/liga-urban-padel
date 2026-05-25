@@ -1572,17 +1572,38 @@ async function saveGroupEdit(lid,g){
     const updated={...p,grupo:newG,orden:newOrd};
     ops.push({op:'set',col:'players',id:pid,data:updated});
   });
-  // Also update partidos that involve moved players if J exists
+  // Regenerate partidos for affected groups in current jornada
   const jId=document.getElementById('prj')?.value;
   if(jId){
+    // Find all affected groups
+    const affectedGroups=new Set([g]);
     Object.entries(newGroups).forEach(([pid,newG])=>{
       const oldP=S.players.find(x=>x.id===pid);
-      if(oldP&&oldP.grupo!==newG){
-        // Update matches in the new jornada
-        S.partidos.filter(m=>m.jornadaId===jId&&[m.a1,m.a2,m.b1,m.b2].includes(pid)).forEach(m=>{
-          ops.push({op:'set',col:'partidos',id:m.id,data:{...m,grupo:newG}});
-        });
-      }
+      if(oldP&&oldP.grupo!==newG){affectedGroups.add(newG);affectedGroups.add(oldP.grupo);}
+    });
+    const jornada=S.jornadas.find(j=>j.id===jId);
+    // Delete old partidos for affected groups
+    S.partidos.filter(m=>m.jornadaId===jId&&affectedGroups.has(m.grupo)).forEach(m=>{
+      ops.push({op:'del',col:'partidos',id:m.id});
+    });
+    // Build updated player list
+    const updatedPlayers=S.players.filter(p=>p.liga===lid).map(p=>{
+      const newG=newGroups[p.id];
+      return newG?{...p,grupo:newG}:p;
+    });
+    // Regenerate partidos for each affected group
+    affectedGroups.forEach(grp=>{
+      const gps=updatedPlayers.filter(p=>p.liga===lid&&p.grupo===grp).sort((a,b)=>(a.orden||0)-(b.orden||0));
+      if(gps.length<4)return;
+      const sample=S.partidos.find(m=>m.jornadaId===jId&&m.grupo===grp)||S.partidos.find(m=>m.jornadaId===jId);
+      const turno=sample?.turno||'';
+      const cancha=sample?.cancha||'';
+      const jornadaNum=jornada?.num||1;
+      const [p1,p2,p3,p4]=gps;
+      [[p1,p2,p3,p4],[p1,p3,p2,p4],[p1,p4,p2,p3]].forEach(([a1,a2,b1,b2],si)=>{
+        const mid=uid();
+        ops.push({op:'set',col:'partidos',id:mid,data:{id:mid,liga:lid,jornadaId:jId,jornada:jornadaNum,grupo:grp,set:si+1,turno,cancha,a1:a1.id,a2:a2.id,b1:b1.id,b2:b2.id,gA:null,gB:null,finalizado:false,ausente:false}});
+      });
     });
   }
   await fsBatch(ops);
@@ -1812,17 +1833,38 @@ async function saveGroupEdit(lid,g){
     const updated={...p,grupo:newG,orden:newOrd};
     ops.push({op:'set',col:'players',id:pid,data:updated});
   });
-  // Also update partidos that involve moved players if J exists
+  // Regenerate partidos for affected groups in current jornada
   const jId=document.getElementById('prj')?.value;
   if(jId){
+    // Find all affected groups
+    const affectedGroups=new Set([g]);
     Object.entries(newGroups).forEach(([pid,newG])=>{
       const oldP=S.players.find(x=>x.id===pid);
-      if(oldP&&oldP.grupo!==newG){
-        // Update matches in the new jornada
-        S.partidos.filter(m=>m.jornadaId===jId&&[m.a1,m.a2,m.b1,m.b2].includes(pid)).forEach(m=>{
-          ops.push({op:'set',col:'partidos',id:m.id,data:{...m,grupo:newG}});
-        });
-      }
+      if(oldP&&oldP.grupo!==newG){affectedGroups.add(newG);affectedGroups.add(oldP.grupo);}
+    });
+    const jornada=S.jornadas.find(j=>j.id===jId);
+    // Delete old partidos for affected groups
+    S.partidos.filter(m=>m.jornadaId===jId&&affectedGroups.has(m.grupo)).forEach(m=>{
+      ops.push({op:'del',col:'partidos',id:m.id});
+    });
+    // Build updated player list
+    const updatedPlayers=S.players.filter(p=>p.liga===lid).map(p=>{
+      const newG=newGroups[p.id];
+      return newG?{...p,grupo:newG}:p;
+    });
+    // Regenerate partidos for each affected group
+    affectedGroups.forEach(grp=>{
+      const gps=updatedPlayers.filter(p=>p.liga===lid&&p.grupo===grp).sort((a,b)=>(a.orden||0)-(b.orden||0));
+      if(gps.length<4)return;
+      const sample=S.partidos.find(m=>m.jornadaId===jId&&m.grupo===grp)||S.partidos.find(m=>m.jornadaId===jId);
+      const turno=sample?.turno||'';
+      const cancha=sample?.cancha||'';
+      const jornadaNum=jornada?.num||1;
+      const [p1,p2,p3,p4]=gps;
+      [[p1,p2,p3,p4],[p1,p3,p2,p4],[p1,p4,p2,p3]].forEach(([a1,a2,b1,b2],si)=>{
+        const mid=uid();
+        ops.push({op:'set',col:'partidos',id:mid,data:{id:mid,liga:lid,jornadaId:jId,jornada:jornadaNum,grupo:grp,set:si+1,turno,cancha,a1:a1.id,a2:a2.id,b1:b1.id,b2:b2.id,gA:null,gB:null,finalizado:false,ausente:false}});
+      });
     });
   }
   await fsBatch(ops);
