@@ -1539,17 +1539,17 @@ function onGrupoSelectChange(sel, grupoOrigen, jId){
 
   if(newGrupo===grupoOrigen)return;
 
-  // Show dropdown to pick who comes from target group
-  const targetPlayers=S.players.filter(p=>p.liga===lid&&p.grupo===newGrupo).sort((a,b)=>(a.orden||0)-(b.orden||0));
-  if(!targetPlayers.length)return;
+  // Show dropdown to pick who comes in exchange - show ALL players from other groups
+  const lid2=getActiveLiga();
+  const allOtherPlayers=S.players.filter(p=>p.liga===lid2&&p.grupo!==grupoOrigen).sort((a,b)=>a.grupo-b.grupo||(a.orden||0)-(b.orden||0));
 
   const swapRow=document.createElement('div');
   swapRow.id='swap-row';
-  swapRow.style.cssText='background:rgba(0,229,158,.06);border:1px solid rgba(0,229,158,.2);border-radius:8px;padding:.65rem .85rem;margin-top:.5rem;display:flex;align-items:center;gap:.65rem';
+  swapRow.style.cssText='background:rgba(0,229,158,.06);border:1px solid rgba(0,229,158,.2);border-radius:8px;padding:.65rem .85rem;margin-top:.5rem;display:flex;align-items:center;gap:.65rem;flex-wrap:wrap';
   swapRow.innerHTML=
-    '<span style="font-size:.75rem;color:var(--accent3);font-weight:600">↔ ¿Quién viene de G'+newGrupo+'?</span>'+
+    '<span style="font-size:.75rem;color:var(--accent3);font-weight:600;width:100%">↔ ¿Quién viene a G'+grupoOrigen+' desde G'+newGrupo+'?</span>'+
     '<select id="swap-player-sel" style="flex:1;background:var(--card2);border:1px solid var(--accent3);border-radius:5px;color:var(--text);font-family:Outfit,sans-serif;font-size:.8rem;padding:4px 6px">'+
-      targetPlayers.map(p=>'<option value="'+p.id+'">'+p.nombre+'</option>').join('')+
+      allOtherPlayers.map(p=>'<option value="'+p.id+'"'+(p.grupo===newGrupo?' selected':'')+'>G'+p.grupo+' · '+p.nombre+'</option>').join('')+
     '</select>';
 
   // Insert after the list
@@ -1596,20 +1596,20 @@ async function saveGroupEdit(lid,g){
     const newG=parseInt(sel.value);
     if(newG&&origGrupo&&newG!==origGrupo) changed.push([pid,newG]);
   });
-  // Also add swap player if present
+  // Also add swap player if present - always include it
   if(swapSel&&swapSel.value){
     const swapPid=swapSel.value;
-    const swapPlayer=S.players.find(x=>x.id===swapPid);
-    if(swapPlayer&&swapPlayer.grupo!==g) changed.push([swapPid,g]);
+    changed.push([swapPid,g]); // swap player always comes to group g
   }
 
   if(!changed.length){toast('Sin cambios',1);return;}
 
   // Affected groups = all groups involved
-  const affectedGroups=new Set();
+  const affectedGroups=new Set([g]); // always include current group
   changed.forEach(([pid,newG])=>{
     const p=S.players.find(x=>x.id===pid);
     if(p){affectedGroups.add(p.grupo);affectedGroups.add(newG);}
+    affectedGroups.add(newG);
   });
 
   // Build updated player map
