@@ -1602,6 +1602,7 @@ async function saveGroupEdit(lid,g){
     changed.push([swapPid,g]); // swap player always comes to group g
   }
 
+  console.log('changed:', changed.map(([pid,g])=>{const p=S.players.find(x=>x.id===pid);return (p?.nombre||pid)+' -> G'+g;}));
   if(!changed.length){toast('Sin cambios',1);return;}
 
   // Affected groups = all groups involved
