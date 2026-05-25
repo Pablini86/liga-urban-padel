@@ -1625,12 +1625,15 @@ async function saveGroupEdit(lid,g){
 
   const ops=[];
 
-  // Save player changes + snapshots
+  // Save player changes + snapshots for ALL affected players
   const jnum=jornada.num;
-  changed.forEach(([pid,newG])=>{
+  // Collect all pids that need updating (changed + swap)
+  const allChangedPids=new Set(changed.map(([pid])=>pid));
+  allChangedPids.forEach(pid=>{
     const p=updatedMap[pid];
+    if(!p)return;
     const snap={};
-    snap['grupo_j'+jnum]=newG;
+    snap['grupo_j'+jnum]=p.grupo; // use updated grupo
     ops.push({op:'set',col:'players',id:pid,data:{...p,...snap}});
   });
 
