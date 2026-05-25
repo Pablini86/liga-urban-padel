@@ -1521,7 +1521,7 @@ function editGroupPos(lid,g,jId){
     '</div>'+
     '<div style="font-size:.7rem;color:var(--muted2);margin-top:.5rem">Al cambiar un jugador de grupo, el último jugador del grupo destino vendrá a ocupar su lugar.</div>'+
     '<div class="brow" style="margin-top:.85rem">'+
-      '<button class="btn bp bsm" onclick="saveGroupEdit(\''+lid+'\','+g+')">Guardar</button>'+
+      '<button class="btn bp bsm" data-lid="'+lid+'" data-g="'+g+'" onclick="saveGroupEdit(this.dataset.lid,parseInt(this.dataset.g))">Guardar</button>'+
       '<button class="btn bs bsm" onclick="closeM(\'m-liga\');renderPromoP()">Cancelar</button>'+
     '</div>';
 
