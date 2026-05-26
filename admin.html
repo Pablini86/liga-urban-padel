@@ -1571,49 +1571,58 @@ async function saveGroupEdit(lid,g){
   const jornada=S.jornadas.find(j=>j.id===jId);
   if(!jId||!jornada){toast('Selecciona una jornada',1);return;}
 
-  const changed=[];
+  // Build final group assignment from modal state
+  // key: pid, value: new group
+  const finalGroups={};
   items.forEach(item=>{
     const sel=item.querySelector('select');
-    if(!sel)return;
-    const origGrupo=parseInt(item.dataset.origGrupo||0);
-    const newG=parseInt(sel.value);
-    if(newG&&origGrupo&&newG!==origGrupo) changed.push({pid:item.dataset.pid,newG,origG:origGrupo});
+    if(sel) finalGroups[item.dataset.pid]=parseInt(sel.value);
   });
+  // Add swap player
   const swapSel=document.getElementById('swap-player-sel');
-  if(swapSel?.value){
-    const swapP=S.players.find(x=>x.id===swapSel.value);
-    if(swapP) changed.push({pid:swapSel.value,newG:g,origG:swapP.grupo});
-  }
-  if(!changed.length){toast('Sin cambios',1);return;}
+  if(swapSel?.value) finalGroups[swapSel.value]=g;
+
+  // Detect affected groups
+  const affected=new Set([g]);
+  Object.entries(finalGroups).forEach(([pid,newG])=>{
+    affected.add(newG);
+    const p=S.players.find(x=>x.id===pid);
+    if(p) affected.add(p.grupo);
+  });
 
   closeM('m-liga');
 
+  // Cancha map
   const canchaMap={};
   S.partidos.filter(m=>m.jornadaId===jId).forEach(m=>{
     if(!canchaMap[m.grupo])canchaMap[m.grupo]={cancha:m.cancha,turno:m.turno};
   });
 
+  // Build updated player map using finalGroups
   const updMap={};
   S.players.filter(p=>p.liga===lid).forEach(p=>updMap[p.id]={...p});
-  changed.forEach(({pid,newG})=>{if(updMap[pid])updMap[pid].grupo=newG;});
+  Object.entries(finalGroups).forEach(([pid,newG])=>{
+    if(updMap[pid]) updMap[pid].grupo=newG;
+  });
 
-  const affected=new Set([g]);
-  changed.forEach(({origG,newG})=>{affected.add(origG);affected.add(newG);});
-
+  // Recalc orden
   affected.forEach(grp=>{
     const gps=Object.values(updMap).filter(p=>p.liga===lid&&p.grupo===grp).sort((a,b)=>(a.orden||0)-(b.orden||0));
     gps.forEach((p,i)=>updMap[p.id].orden=(grp-1)*4+i);
   });
 
   const ops=[];
-  changed.forEach(({pid,newG})=>{
+  // Save all players that changed
+  Object.entries(finalGroups).forEach(([pid,newG])=>{
     const p=updMap[pid];if(!p)return;
     const snap={};snap['grupo_j'+jornada.num]=newG;
     ops.push({op:'set',col:'players',id:pid,data:{...p,...snap}});
   });
+  // Delete old partidos
   S.partidos.filter(m=>m.jornadaId===jId&&affected.has(m.grupo)).forEach(m=>{
     ops.push({op:'del',col:'partidos',id:m.id});
   });
+  // Regenerate
   affected.forEach(grp=>{
     const gps=Object.values(updMap).filter(p=>p.liga===lid&&p.grupo===grp).sort((a,b)=>(a.orden||0)-(b.orden||0));
     if(gps.length<4){toast('G'+grp+' tiene '+gps.length+' jugadores',1);return;}
@@ -1626,7 +1635,7 @@ async function saveGroupEdit(lid,g){
   });
 
   await fsBatch(ops);
-  toast('✓ Grupos actualizados');
+  toast('Grupos actualizados');
   renderPromoP();
 }
 
