@@ -1675,6 +1675,8 @@ function closeM(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.mo').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 let _tt;
 function toast(msg,err){const t=document.getElementById('toast');t.textContent=msg;t.className=err?'err show':'show';clearTimeout(_tt);_tt=setTimeout(()=>t.className='',2300);}
+}
+
 </script>
 </body>
 </html>
