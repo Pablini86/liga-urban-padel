@@ -319,9 +319,12 @@ db.collection('patrocinadores').onSnapshot(s=>{
 }, err=>{console.warn('patrocinadores:',err);});
 
 // HELPERS
+const _escMap={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>_escMap[c]);
+const safeUrl=u=>(u&&/^https?:\/\//i.test(u))?esc(u):'#';
 const pById=id=>S.players.find(x=>x.id===id);
-const pName=id=>{const p=pById(id);return p?p.nombre:'?';};
-function pShort(n){if(!n)return'?';const w=n.trim().split(/ +/);return w.length>=2?w[0]+' '+w[1]:w[0];}
+const pName=id=>{const p=pById(id);return p?esc(p.nombre):'?';};
+function pShort(n){if(!n)return'?';const w=n.trim().split(/ +/);return esc(w.length>=2?w[0]+' '+w[1]:w[0]);}
 const pFirst=id=>{const p=pById(id);return p?pShort(p.nombre):'?';};
 
 function calcPts(pid,lid,jid){
@@ -395,8 +398,8 @@ function renderPatrocinadoresHome(){
     '<div style="position:relative;border-radius:14px;overflow:hidden;background:var(--card);width:100%">'+
       '<div id="car-track" style="display:flex;transition:transform .5s cubic-bezier(.4,0,.2,1);will-change:transform">'+
         banners.map(p=>
-          '<a href="'+(p.url||'#')+'" target="_blank" style="min-width:100%;width:100%;flex:0 0 100%;display:block">'+
-            '<img src="'+p.bannerUrl+'" alt="'+p.nombre+'" style="width:100%;max-height:220px;object-fit:cover;display:block">'+
+          '<a href="'+safeUrl(p.url)+'" target="_blank" rel="noopener noreferrer" style="min-width:100%;width:100%;flex:0 0 100%;display:block">'+
+            '<img src="'+esc(p.bannerUrl)+'" alt="'+esc(p.nombre)+'" style="width:100%;max-height:220px;object-fit:cover;display:block">'+
           '</a>'
         ).join('')+
       '</div>'+
@@ -441,8 +444,8 @@ function renderPatrocinadoresLiga(lid){
     '<div style="font-size:.6rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.55rem">Patrocinadores</div>'+
     '<div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center">'+
       pats.map(p=>
-        '<a href="'+(p.url||'#')+'" target="_blank" style="display:flex;align-items:center;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:.45rem .85rem;text-decoration:none">'+
-          '<img src="'+p.logoUrl+'" alt="'+p.nombre+'" style="height:26px;max-width:80px;object-fit:contain;filter:brightness(0) invert(1);opacity:.8">'+
+        '<a href="'+safeUrl(p.url)+'" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:.45rem .85rem;text-decoration:none">'+
+          '<img src="'+esc(p.logoUrl)+'" alt="'+esc(p.nombre)+'" style="height:26px;max-width:80px;object-fit:contain;filter:brightness(0) invert(1);opacity:.8">'+
         '</a>'
       ).join('')+
     '</div>'+
@@ -476,8 +479,8 @@ function renderHome(){
     const jornada_label=nextJ?`Jornada ${nextJ.num} próxima`:(currentJ?`En Jornada ${currentJ}`:'Por comenzar');
     return`<div class="league-card" onclick="openLiga('${l.id}')">
       <div class="lc-status"><span class="lc-dot"></span>En vivo</div>
-      <div class="lc-name">${l.nombre}</div>
-      <div class="lc-dia">${l.dia||''} · ${l.cat||'Mixta'}</div>
+      <div class="lc-name">${esc(l.nombre)}</div>
+      <div class="lc-dia">${esc(l.dia||'')} · ${esc(l.cat||'Mixta')}</div>
       <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.5rem">
         <span class="lc-tag">${ps} jugadores</span>
         <span class="lc-tag" style="background:rgba(0,229,158,.08);color:var(--accent3);border-color:rgba(0,229,158,.2)">${jornada_label}</span>
@@ -494,15 +497,15 @@ function renderHome(){
     return`<div class="league-card" onclick="openLiga('${l.id}')" style="border-color:rgba(255,215,0,.2);opacity:.85">
       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.65rem">
         <span style="font-size:.65rem;font-weight:700;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase">Finalizada</span>
-        ${l.fechaCierre?`<span style="font-size:.65rem;color:var(--muted2)">${l.fechaCierre}</span>`:''}
+        ${l.fechaCierre?`<span style="font-size:.65rem;color:var(--muted2)">${esc(l.fechaCierre)}</span>`:''}
       </div>
-      <div class="lc-name" style="font-size:1.4rem">${l.nombre}</div>
-      <div class="lc-dia">${l.dia||''} · ${l.cat||'Mixta'}</div>
+      <div class="lc-name" style="font-size:1.4rem">${esc(l.nombre)}</div>
+      <div class="lc-dia">${esc(l.dia||'')} · ${esc(l.cat||'Mixta')}</div>
       <div style="margin-top:.65rem;background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.15);border-radius:7px;padding:.6rem .75rem">
         <div style="font-size:.58rem;font-weight:700;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:.4rem">Podio</div>
         ${top3.map((x,i)=>`<div style="display:flex;align-items:center;gap:.5rem;padding:.2rem 0;font-size:.8rem">
           <span>${medals[i]}</span>
-          <span style="flex:1;font-weight:${i===0?700:400}">${x.player.nombre}</span>
+          <span style="flex:1;font-weight:${i===0?700:400}">${esc(x.player.nombre)}</span>
           <span style="font-family:'Bebas Neue',sans-serif;font-size:1rem;color:${x.total>=0?'var(--accent)':'var(--accent2)'}">${x.total>0?'+':''}${x.total}</span>
         </div>`).join('')}
       </div>
@@ -526,7 +529,7 @@ function renderLiga(lid){
   const liga=S.ligas.find(l=>l.id===lid);
   if(!liga)return;
   // Header
-  const parts=liga.nombre.split(' ');
+  const parts=liga.nombre.split(' ').map(esc);
   document.getElementById('liga-title').innerHTML=parts.slice(0,-1).join(' ')+' <em>'+parts.slice(-1)+'</em>';
   document.getElementById('liga-meta').textContent=(liga.dia||'')+(liga.cat?' · '+liga.cat:'')+(liga.inicio?' · '+liga.inicio:'');
   // Show liga patrocinadores in header
@@ -571,7 +574,7 @@ function renderInicio(lid){
         <div>
           <div class="cl">📅 Próxima Jornada</div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:2px">JORNADA ${nextJ.num}</div>
-          <div style="font-size:.75rem;color:var(--muted2)">${nextJ.fecha||'Fecha por confirmar'}</div>
+          <div style="font-size:.75rem;color:var(--muted2)">${esc(nextJ.fecha||'Fecha por confirmar')}</div>
         </div>
         <button onclick="showHorarioJornada('${lid}','${nextJ.id}')" style="padding:.4rem .85rem;border-radius:7px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-family:'Outfit',sans-serif;font-size:.75rem;font-weight:600;cursor:pointer">Ver horarios →</button>
       </div>
@@ -601,7 +604,7 @@ function renderInicio(lid){
         <div>
           <div class="cl">⚡ Últimos Resultados</div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:2px">JORNADA ${lastJ.num}</div>
-          <div style="font-size:.75rem;color:var(--muted2)">${lastJ.fecha||''}</div>
+          <div style="font-size:.75rem;color:var(--muted2)">${esc(lastJ.fecha||'')}</div>
         </div>
         <button onclick="showLT('jornadas',document.querySelectorAll('.lt')[2])" style="padding:.4rem .85rem;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--muted2);font-family:'Outfit',sans-serif;font-size:.75rem;cursor:pointer">Ver todos →</button>
       </div>
@@ -631,9 +634,9 @@ function renderInicio(lid){
     const pct=Math.max(8,Math.min(100,((s.total+30)/60)*100));
     return`<div class="top10-row ${rowClass}" onclick="openPlayer('${s.player.id}','${lid}')">
       <span class="top10-rank" style="color:${rankColor}">${i+1}</span>
-      <div class="top10-av">${s.player.nombre[0]}</div>
+      <div class="top10-av">${esc(s.player.nombre[0])}</div>
       <div class="top10-info">
-        <div class="top10-name">${s.player.nombre}</div>
+        <div class="top10-name">${esc(s.player.nombre)}</div>
         <div style="display:flex;align-items:center;gap:.5rem;margin-top:.3rem">
           <div class="bar-container"><div class="bar-fill" style="width:${pct}%"></div></div>
           <span style="font-size:.65rem;color:var(--muted2)">G${s.player.grupo}</span>
@@ -672,7 +675,7 @@ function renderTabla(lid){
     }).join('');
     return`<tr class="${i===0?'top1':''}" onclick="openPlayer('${s.player.id}','${lid}')">
       <td class="pos">${i+1}</td>
-      <td style="font-weight:600">${s.player.nombre}</td>
+      <td style="font-weight:600">${esc(s.player.nombre)}</td>
       <td><span class="gr">G${s.player.grupo}</span></td>
       ${jCells}
       <td class="tot ${s.total>=0?'pv':'nv'}">${s.total>0?'+':''}${s.total}</td>
@@ -703,7 +706,7 @@ function renderJornadas(lid){
       <div class="jc-header" onclick="toggleJornada('${j.id}')">
         <div>
           <div class="jc-title">JORNADA ${j.num}</div>
-          <div class="jc-meta">${j.fecha||'Fecha por confirmar'} · ${(j.turnos||[]).join(' · ')}</div>
+          <div class="jc-meta">${esc(j.fecha||'Fecha por confirmar')} · ${esc((j.turnos||[]).join(' · '))}</div>
         </div>
         <div style="display:flex;align-items:center;gap:.5rem">
           ${badge}
@@ -734,7 +737,7 @@ function renderJornadaFixture(jId,lid){
     return`<div class="grupo-block">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
         <div class="grupo-title">GRUPO ${g}</div>
-        <span style="font-size:.68rem;color:var(--muted2)">${gms[0]?.cancha||''} · ${gms[0]?.turno||''}</span>
+        <span style="font-size:.68rem;color:var(--muted2)">${esc(gms[0]?.cancha||'')} · ${esc(gms[0]?.turno||'')}</span>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.5rem">
         ${gps.map(p=>`<span style="background:var(--card2);border:1px solid var(--border);border-radius:5px;padding:2px 8px;font-size:.75rem;font-weight:500">${pShort(p.nombre)}</span>`).join('')}
@@ -756,7 +759,7 @@ function renderJornadaBody(jId,lid){
   return grupos.map(g=>{
     const gms=ms.filter(m=>m.grupo===g);
     return`<div class="grupo-block">
-      <div class="grupo-title">GRUPO ${g} · ${gms[0]?.cancha||''} · ${gms[0]?.turno||''}</div>
+      <div class="grupo-title">GRUPO ${g} · ${esc(gms[0]?.cancha||'')} · ${esc(gms[0]?.turno||'')}</div>
       ${gms.map(m=>{
         const wA=m.gA>m.gB,wB=m.gB>m.gA;
         return`<div style="margin-bottom:.55rem">
@@ -855,7 +858,7 @@ function renderHorariosSingle(lid, jId){
         .map(pid => S.players.find(p => p.id === pid))
         .filter(Boolean)
         .sort((a,b) => a.orden - b.orden)
-        .map(p => ({nombre: p.nombre, inicial: p.nombre[0]}))
+        .map(p => ({nombre: esc(p.nombre), inicial: esc(p.nombre[0])}))
     }))
   );
 }
@@ -874,7 +877,7 @@ function renderHorariosGrid(el, jId, title, fecha, turnos, grupos){
       '<span style="background:var(--accent);color:var(--black);font-family:Bebas Neue,sans-serif;' +
       'font-size:1rem;padding:1px 8px;border-radius:5px;font-weight:700">G' + grupo + '</span>' +
       '<span style="font-family:Bebas Neue,sans-serif;font-size:1.15rem;color:var(--accent);' +
-      'letter-spacing:1px">' + turno + '</span></div>';
+      'letter-spacing:1px">' + esc(turno) + '</span></div>';
 
     players.forEach((p, i) => {
       html += '<div class="h-row" data-name="' + p.nombre.toLowerCase() + '" ' +
@@ -905,9 +908,9 @@ function openPlayer(pid,lid){
   const rank=st.findIndex(x=>x.player.id===pid)+1;
 
   document.getElementById('modal-content').innerHTML=`
-    <h2>${pShort(p.nombre)} <em>${p.nombre.split(' ').slice(1).join(' ')}</em></h2>
+    <h2>${pShort(p.nombre)} <em>${esc(p.nombre.split(' ').slice(1).join(' '))}</em></h2>
     <div style="display:flex;gap:.65rem;flex-wrap:wrap;margin-bottom:1.1rem">
-      <span style="font-size:.75rem;color:var(--muted2)">Grupo ${p.grupo} · ${p.cat||''}</span>
+      <span style="font-size:.75rem;color:var(--muted2)">Grupo ${p.grupo} · ${esc(p.cat||'')}</span>
       <span style="font-size:.75rem;color:var(--accent);font-weight:700">#${rank} en tabla</span>
     </div>
     <div style="display:flex;gap:.65rem;margin-bottom:1.2rem">
@@ -926,7 +929,7 @@ function openPlayer(pid,lid){
       const bar=pts!==null?`<div style="display:flex;align-items:center;gap:.5rem;margin-top:.25rem"><div class="bar-container" style="height:5px"><div class="bar-fill" style="width:${Math.max(0,Math.min(100,((pts+12)/24)*100))}%;background:${pts>=0?'var(--accent)':'var(--accent2)'}"></div></div></div>`:'';
       return`<div style="display:flex;align-items:center;gap:.65rem;padding:.45rem 0;border-bottom:1px solid var(--border)">
         <span style="font-family:'Bebas Neue',sans-serif;font-size:1rem;color:var(--muted);min-width:24px">J${j.num}</span>
-        <span style="font-size:.78rem;color:var(--muted2);flex:1">${j.fecha||''}</span>
+        <span style="font-size:.78rem;color:var(--muted2);flex:1">${esc(j.fecha||'')}</span>
         <span style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:${pts===null?'var(--muted)':pts>=0?'var(--accent)':'var(--accent2)'}">${pts===null?'—':pts>0?'+'+pts:pts}</span>
       </div>`;
     }).join('')}`;
