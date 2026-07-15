@@ -1,4 +1,4 @@
-import {S, esc, uid, getActiveLiga, pById, fsSet, fsDel, toast} from './state.js';
+import {S, esc, uid, getActiveLiga, pById, fsBatch, fsDel, toast} from './state.js';
 import {openM, closeM} from './modal.js';
 
 // ═══ RESTRICCIONES ═══
@@ -51,8 +51,9 @@ export function openAddRestriccion(preselectPid){
   const ps=S.players.filter(p=>p.liga===lid).sort((a,b)=>a.grupo-b.grupo||a.orden-b.orden);
   pSel.innerHTML=ps.map(p=>'<option value="'+p.id+'"'+(p.id===preselectPid?' selected':'')+'>G'+p.grupo+' - '+esc(p.nombre)+'</option>').join('');
   const turnos=[...new Set(S.jornadas.filter(j=>j.liga===lid).flatMap(j=>j.turnos||[]))].sort();
-  const tSel=document.getElementById('rst-turno');
-  tSel.innerHTML=(turnos.length?turnos:['18:00','19:15','20:30','21:45']).map(t=>'<option value="'+esc(t)+'">'+esc(t)+'</option>').join('');
+  const tChips=document.getElementById('rst-turno-chips');
+  tChips.className='chip-select';
+  tChips.innerHTML=(turnos.length?turnos:['18:00','19:15','20:30','21:45']).map(t=>'<span class="chip-toggle" data-turno="'+esc(t)+'" onclick="toggleRstChip(this)">'+esc(t)+'</span>').join('');
   const jSel=document.getElementById('rst-jornada');
   const js=S.jornadas.filter(j=>j.liga===lid).sort((a,b)=>a.num-b.num);
   jSel.innerHTML=js.map(j=>'<option value="'+j.id+'">J'+j.num+(j.fecha?' - '+esc(j.fecha):'')+'</option>').join('');
@@ -63,6 +64,10 @@ export function openAddRestriccion(preselectPid){
 
 export function toggleRstJornada(){
   document.getElementById('rst-jornada-wrap').style.display=document.getElementById('rst-scope').value==='jornada'?'':'none';
+}
+
+export function toggleRstChip(el){
+  el.classList.toggle('active');
 }
 
 export function filterRestricciones(q){
@@ -76,14 +81,14 @@ export function filterRestricciones(q){
 export async function saveRestriccion(){
   const lid=getActiveLiga();
   const pid=document.getElementById('rst-player').value;
-  const turno=document.getElementById('rst-turno').value;
+  const turnos=[...document.querySelectorAll('#rst-turno-chips .chip-toggle.active')].map(el=>el.dataset.turno);
   const scope=document.getElementById('rst-scope').value;
   const jornadaId=scope==='jornada'?document.getElementById('rst-jornada').value:null;
-  if(!pid||!turno){toast('Faltan datos',1);return;}
-  const r={id:uid(),liga:lid,pid,turno,scope,jornadaId:jornadaId||null};
-  await fsSet('restricciones',r.id,r);
+  if(!pid||!turnos.length){toast('Selecciona jugador y al menos un horario',1);return;}
+  const ops=turnos.map(turno=>{const id=uid();return{op:'set',col:'restricciones',id,data:{id,liga:lid,pid,turno,scope,jornadaId:jornadaId||null}};});
+  await fsBatch(ops);
   closeM('m-restriccion');
-  toast('Restriccion guardada');
+  toast(turnos.length>1?`✓ ${turnos.length} restricciones guardadas`:'Restriccion guardada');
 }
 
 export async function delRestriccion(id){

@@ -86,6 +86,10 @@ select option{background:var(--dark);}
 .pool-chip:hover{border-color:var(--accent);color:var(--accent);}
 .pool-chip.dragging{opacity:.35;}
 .captura-nav{display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:1rem;}
+.chip-select{display:flex;flex-wrap:wrap;gap:.4rem;}
+.chip-toggle{padding:.4rem .85rem;background:var(--card2);border:1.5px solid var(--border2);border-radius:20px;cursor:pointer;font-size:.8rem;font-weight:600;transition:all .15s;color:var(--muted2);user-select:none;}
+.chip-toggle:hover{border-color:var(--muted2);color:var(--text);}
+.chip-toggle.active{background:var(--accent);border-color:var(--accent);color:var(--black);}
 .migrate-banner{background:linear-gradient(135deg,rgba(212,240,0,.07),rgba(0,229,158,.04));border:1px solid rgba(212,240,0,.2);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
 .collapsible summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:.75rem;}
 .collapsible summary::-webkit-details-marker{display:none;}
