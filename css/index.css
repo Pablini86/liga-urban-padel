@@ -1,0 +1,134 @@
+:root{--black:#080808;--dark:#111;--card:#161616;--card2:#1c1c1c;--border:#242424;--border2:#303030;--accent:#d4f000;--accent2:#ff3b5c;--accent3:#00e59e;--text:#efefef;--muted:#505050;--muted2:#888;--gold:#ffd700;--silver:#b8b8b8;--bronze:#cd7f32;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:var(--black);color:var(--text);font-family:'Outfit',sans-serif;min-height:100vh;position:relative;}
+main,nav,#mobile-bar{position:relative;z-index:1;}
+a{color:inherit;text-decoration:none;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:54px;background:rgba(8,8,8,.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:3px;color:var(--accent);cursor:pointer;}
+.logo span{color:var(--text);}
+.nav-right{display:flex;align-items:center;gap:.5rem;}
+.back-btn{display:none;align-items:center;gap:.4rem;padding:5px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--muted2);font-family:'Outfit',sans-serif;font-size:.78rem;cursor:pointer;transition:all .15s;}
+.back-btn:hover{color:var(--text);}
+.back-btn.show{display:flex;}
+.nav-liga-name{display:none;font-size:.78rem;font-weight:600;color:var(--text);}
+.nav-liga-name.show{display:block;}
+
+main{margin-top:54px;padding:1.2rem;max-width:1200px;margin-left:auto;margin-right:auto;}
+
+/* VIEWS */
+.view{display:none;}
+.view.active{display:block;animation:fi .2s ease;}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* HOME */
+.home-hero{padding:2rem 0 1.5rem;text-align:center;}
+.home-hero h1{font-family:'Bebas Neue',sans-serif;font-size:3.2rem;letter-spacing:6px;line-height:1;margin-bottom:.25rem;}
+.home-hero h1 span{color:var(--accent);}
+.home-hero p{font-size:.82rem;color:var(--muted2);}
+.leagues-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-top:1.5rem;}
+.league-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.4rem;cursor:pointer;transition:all .18s;position:relative;overflow:hidden;}
+.league-card:hover{border-color:var(--accent);transform:translateY(-2px);}
+.league-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent);}
+.lc-status{display:inline-flex;align-items:center;gap:.4rem;font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent3);margin-bottom:.85rem;}
+.lc-dot{width:6px;height:6px;border-radius:50%;background:var(--accent3);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.lc-name{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:2px;line-height:1;margin-bottom:.3rem;}
+.lc-dia{font-size:.8rem;color:var(--muted2);margin-bottom:1rem;}
+.lc-arrow{position:absolute;right:1.2rem;bottom:1.2rem;color:var(--accent);font-size:1.2rem;}
+.lc-tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.65rem;font-weight:700;letter-spacing:1px;background:rgba(212,240,0,.08);color:var(--accent);border:1px solid rgba(212,240,0,.2);}
+
+/* LIGA VIEW */
+.liga-header{padding:1.2rem 0 1rem;border-bottom:1px solid var(--border);margin-bottom:1.2rem;}
+.liga-header h1{font-family:'Bebas Neue',sans-serif;font-size:2.6rem;letter-spacing:4px;line-height:1;}
+.liga-header h1 em{color:var(--accent);font-style:normal;}
+.liga-header p{font-size:.78rem;color:var(--muted2);margin-top:.2rem;}
+.liga-tabs{display:flex;gap:2px;margin-bottom:1.3rem;border-bottom:1px solid var(--border);}
+.lt{padding:8px 14px;border:none;background:transparent;color:var(--muted2);font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;margin-bottom:-1px;}
+.lt:hover{color:var(--text);}
+.lt.active{color:var(--accent);border-bottom-color:var(--accent);}
+.ltab{display:none;}
+.ltab.active{display:block;}
+
+/* TOP 10 */
+.top10-row{display:grid;grid-template-columns:36px 40px 1fr auto;align-items:center;gap:.65rem;padding:.7rem .9rem;border-radius:10px;background:var(--card);border:1px solid var(--border);margin-bottom:.3rem;cursor:pointer;transition:all .15s;}
+.top10-row:hover{border-color:var(--accent);background:rgba(212,240,0,.03);}
+.top10-row.gold{border-color:rgba(255,215,0,.35);background:linear-gradient(90deg,rgba(255,215,0,.05),transparent);}
+.top10-row.silver{border-color:rgba(184,184,184,.25);background:linear-gradient(90deg,rgba(184,184,184,.04),transparent);}
+.top10-row.bronze{border-color:rgba(205,127,50,.25);background:linear-gradient(90deg,rgba(205,127,50,.04),transparent);}
+.top10-rank{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;text-align:center;line-height:1;}
+.top10-av{width:38px;height:38px;border-radius:50%;background:var(--border2);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:1.05rem;color:var(--accent);flex-shrink:0;}
+.top10-info{min-width:0;}
+.top10-name{font-weight:600;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.top10-sub{font-size:.66rem;color:var(--muted2);margin-top:.15rem;}
+.top10-pts{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;line-height:1;}
+
+/* TABLA GENERAL */
+.tw{overflow-x:auto;border-radius:10px;border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:.8rem;}
+thead tr{border-bottom:2px solid var(--accent);}
+th{padding:.55rem .6rem;text-align:left;font-size:.62rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+th.acc{color:var(--accent);}
+tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;}
+tbody tr:hover{background:rgba(255,255,255,.02);}
+tbody tr:last-child{border-bottom:none;}
+tbody tr.top1{background:rgba(255,215,0,.03);}
+td{padding:.5rem .6rem;white-space:nowrap;}
+td.pos{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--muted);}
+td.pv{color:var(--accent);font-weight:600;}
+td.nv{color:var(--accent2);font-weight:600;}
+td.tot{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;}
+.gr{display:inline-block;background:var(--border2);color:var(--accent);font-family:'Bebas Neue',sans-serif;font-size:.8rem;padding:0 4px;border-radius:3px;}
+
+/* JORNADAS */
+.jornada-card{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:.85rem;overflow:hidden;}
+.jc-header{padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .15s;}
+.jc-header:hover{background:rgba(255,255,255,.02);}
+.jc-title{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:2px;}
+.jc-meta{font-size:.7rem;color:var(--muted2);margin-top:.1rem;}
+.jc-badge{padding:2px 8px;border-radius:4px;font-size:.65rem;font-weight:700;}
+.jc-done{background:rgba(0,229,158,.08);color:var(--accent3);border:1px solid rgba(0,229,158,.2);}
+.jc-pending{background:rgba(212,240,0,.06);color:var(--accent);border:1px solid rgba(212,240,0,.15);}
+.jc-empty{background:rgba(255,255,255,.04);color:var(--muted2);border:1px solid var(--border);}
+.jc-body{display:none;border-top:1px solid var(--border);}
+.jc-body.open{display:block;}
+.jc-empty-msg{padding:1.5rem;text-align:center;color:var(--muted2);font-size:.8rem;}
+
+/* GRUPOS EN JORNADA */
+.grupo-block{border-bottom:1px solid var(--border);padding:.85rem 1rem;}
+.grupo-block:last-child{border-bottom:none;}
+.grupo-title{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:2px;color:var(--accent);margin-bottom:.55rem;}
+.set-row{display:grid;grid-template-columns:1fr auto auto auto 1fr;gap:.4rem;align-items:center;margin-bottom:.3rem;font-size:.8rem;}
+.set-label{font-size:.6rem;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;grid-column:1/-1;margin-bottom:.1rem;}
+.set-team-a{text-align:right;}
+.set-team-b{text-align:left;}
+.set-sc{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;background:var(--card2);border-radius:4px;padding:1px 6px;min-width:26px;text-align:center;}
+.set-sc.win{background:var(--accent);color:var(--black);}
+.set-dash{color:var(--muted);font-size:.8rem;}
+
+/* PLAYER MODAL */
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.87);z-index:200;align-items:flex-end;justify-content:center;padding:0;}
+.mo.open{display:flex;animation:moin .22s ease;}
+@keyframes moin{from{opacity:0}to{opacity:1}}
+.modal{background:var(--dark);border-radius:18px 18px 0 0;padding:1.5rem 1.25rem;width:100%;max-width:540px;max-height:88vh;overflow-y:auto;}
+.modal-handle{width:40px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 1.2rem;}
+.mc{float:right;background:transparent;border:none;color:var(--muted2);font-size:1.2rem;cursor:pointer;margin-top:-4px;}
+.modal h2{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:2px;margin-bottom:.25rem;}
+.modal h2 em{color:var(--accent);font-style:normal;}
+
+/* MISC */
+.cl{font-size:.63rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem;}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--muted2);}
+.empty-state div{font-size:2.5rem;margin-bottom:.75rem;}
+.bar-container{background:var(--border);border-radius:2px;height:4px;flex:1;overflow:hidden;}
+.bar-fill{height:100%;border-radius:2px;background:var(--accent);transition:width .4s ease;}
+
+@media(max-width:600px){
+  .home-hero h1{font-size:2.4rem;}
+  main{padding:.9rem;}
+  .liga-header h1{font-size:2rem;}
+  .tw{font-size:.74rem;}
+  th,td{padding:.4rem .45rem;}
+}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
