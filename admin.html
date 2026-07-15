@@ -38,10 +38,8 @@
       <span style="color:var(--accent2);font-size:.8rem;font-weight:700;letter-spacing:1.5px">ADMIN</span>
     </div>
     <div class="nav-right">
-      <div class="uinfo" id="nav-liga-active" style="font-size:.78rem;color:var(--accent);font-weight:600;cursor:pointer;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="volverALigas()"></div>
-      <button class="nbtn" onclick="volverALigas()" style="font-size:.72rem">Ligas</button>
-      <a href="index.html" class="nbtn green">Ver</a>
-      <button class="nbtn" id="logout-btn">Salir</button>
+      <a href="index.html" class="nbtn green" target="_blank" rel="noopener noreferrer">Ver sitio</a>
+      <button class="nbtn danger" id="logout-btn">Salir</button>
     </div>
   </nav>
   <main>
@@ -70,21 +68,28 @@
     </div>
 
     <div id="at-ligas">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:2px">LIGAS</div>
+        <button class="btn bp bsm" onclick="openM('m-liga')">+ Nueva Liga</button>
+      </div>
       <div id="ligas-list" style="margin-bottom:.85rem"></div>
-      <button class="btn bp bsm" onclick="openM('m-liga')">+ Nueva Liga</button>
-    
 
       <!-- BANNERS HERO -->
-      <div style="margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--border)">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+      <details class="collapsible" style="margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+        <summary>
           <div>
-            <div style="font-weight:700;font-size:.88rem">Banners Hero</div>
-            <div style="font-size:.72rem;color:var(--muted2)">Aparecen antes de las ligas en el home · Ratio 3:1 recomendado (1200×400px)</div>
+            <div class="collapsible-title">Banners Hero</div>
+            <div class="collapsible-sub">Aparecen antes de las ligas en el home · Ratio 3:1 recomendado (1200×400px)</div>
           </div>
-          <button class="btn bp bsm" onclick="openAddPatrocinador('banner')">+ Banner</button>
+        </summary>
+        <div class="collapsible-body">
+          <div style="text-align:right;margin-bottom:.75rem">
+            <button class="btn bp bsm" onclick="openAddPatrocinador('banner')">+ Banner</button>
+          </div>
+          <div id="pat-banners-list"></div>
         </div>
-        <div id="pat-banners-list"></div>
-      </div></div>
+      </details>
+    </div>
 
     <div id="at-patrocinadores" style="display:none">
       <div style="max-width:860px">
