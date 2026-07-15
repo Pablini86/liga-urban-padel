@@ -31,44 +31,43 @@ export function renderLigasAdmin(){
   const activas=S.ligas.filter(l=>l.status!=='archivada');
   const archivadas=S.ligas.filter(l=>l.status==='archivada');
   function cardHtml(l){
-    const isArchived=l.status==='archivada';
+    const jornadas=S.jornadas.filter(j=>j.liga===l.id);
+    const players=S.players.filter(p=>p.liga===l.id);
+    const isActive=S.activeLiga===l.id;
+    const borderColor=isActive?'var(--accent)':'var(--border)';
+    return '<div style="background:var(--card);border:2px solid '+borderColor+';border-radius:12px;padding:1rem;margin-bottom:.65rem">'+
+      '<div style="display:flex;align-items:center;gap:.65rem">'+
+        '<div style="flex:1"><div style="font-weight:700;font-size:.95rem">'+esc(l.nombre)+'</div>'+
+        '<div style="font-size:.68rem;color:var(--muted2);margin-top:.15rem">'+(l.cat||'')+' &middot; '+(l.dia||'')+' &middot; '+jornadas.length+'/'+(l.nj||6)+' jornadas &middot; '+players.length+' jugadores</div></div>'+
+        '<span class="bdg b-ok">'+(l.status||'activa').toUpperCase()+'</span>'+
+        '<button class="btn bp bsm" onclick="entrarLiga(&quot;'+l.id+'&quot;)">Entrar &rarr;</button>'+
+        '<button class="btn bs bxs" onclick="cerrarLiga(&quot;'+l.id+'&quot;)" style="border-color:var(--accent);color:var(--accent)">Cerrar</button>'+
+        '<button class="btn bd bxs" onclick="delLiga(&quot;'+l.id+'&quot;)">X</button>'+
+      '</div>'+
+    '</div>';
+  }
+  function cardArchivadaHtml(l){
     const jornadas=S.jornadas.filter(j=>j.liga===l.id);
     const players=S.players.filter(p=>p.liga===l.id);
     const global=calcGlobal(l.id);
     const champ=global[0]&&global[0].player;
     const isActive=S.activeLiga===l.id;
     const borderColor=isActive?'var(--accent)':'var(--border)';
-    const statusClass=isArchived?'b-eq':'b-ok';
-    const statusText=(l.status||'activa').toUpperCase();
-    var enterBtn=isArchived?
-      '<button class="btn bs bsm" onclick="entrarLiga(&quot;'+l.id+'&quot;)">Ver historial</button>':
-      '<button class="btn bp bsm" onclick="entrarLiga(&quot;'+l.id+'&quot;)">Entrar &rarr;</button>';
-    var closeBtn=!isArchived?'<button class="btn bs bxs" onclick="cerrarLiga(&quot;'+l.id+'&quot;)" style="border-color:var(--accent);color:var(--accent)">Cerrar</button>':'';
-    var podio='';
-    if(isArchived&&champ){
-      const medals=['1o','2o','3o'];
-      var top3html='';
-      global.slice(0,3).forEach(function(x,i){top3html+='<span style="font-size:.75rem;color:var(--muted2)">'+medals[i]+' '+esc(x.player.nombre)+' <span style="color:var(--accent)">'+(x.total>0?'+':'')+x.total+'</span></span> ';});
-      podio='<div style="background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.2);border-radius:7px;padding:.6rem .85rem;margin-top:.65rem">'+
-        '<div style="font-size:.58rem;font-weight:700;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:.35rem">Campeon</div>'+
-        '<div style="font-weight:700;font-size:.9rem">'+esc(champ.nombre)+'</div>'+
-        '<div style="display:flex;gap:.65rem;margin-top:.4rem;flex-wrap:wrap">'+top3html+'</div>'+
-      '</div>';
-    }
-    return '<div style="background:var(--card);border:2px solid '+borderColor+';border-radius:12px;padding:1rem;margin-bottom:.65rem">'+
-      '<div style="display:flex;align-items:center;gap:.65rem">'+
-        '<div style="flex:1"><div style="font-weight:700;font-size:.95rem">'+esc(l.nombre)+'</div>'+
-        '<div style="font-size:.68rem;color:var(--muted2);margin-top:.15rem">'+(l.cat||'')+' &middot; '+(l.dia||'')+' &middot; '+jornadas.length+'/'+(l.nj||6)+' jornadas &middot; '+players.length+' jugadores</div></div>'+
-        '<span class="bdg '+statusClass+'">'+statusText+'</span>'+enterBtn+closeBtn+
-        '<button class="btn bd bxs" onclick="delLiga(&quot;'+l.id+'&quot;)">X</button>'+
-      '</div>'+podio+
+    return '<div style="background:var(--card);border:1px solid '+borderColor+';border-radius:9px;padding:.55rem .8rem;margin-bottom:.35rem;display:flex;align-items:center;gap:.65rem;flex-wrap:wrap">'+
+      '<div style="flex:1;min-width:160px">'+
+        '<div style="font-weight:700;font-size:.84rem">'+esc(l.nombre)+'</div>'+
+        '<div style="font-size:.65rem;color:var(--muted2);margin-top:.1rem">'+jornadas.length+'/'+(l.nj||6)+' jornadas &middot; '+players.length+' jugadores'+(champ?' &middot; Campeon: '+esc(champ.nombre):'')+'</div>'+
+      '</div>'+
+      '<span class="bdg b-eq">FINALIZADA</span>'+
+      '<button class="btn bs bxs" onclick="entrarLiga(&quot;'+l.id+'&quot;)">Ver historial</button>'+
+      '<button class="btn bd bxs" onclick="delLiga(&quot;'+l.id+'&quot;)">X</button>'+
     '</div>';
   }
   var html='';
   if(activas.length) html+=activas.map(cardHtml).join('');
   if(archivadas.length){
     if(activas.length) html+='<div style="font-size:.62rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin:1rem 0 .5rem">Ligas archivadas</div>';
-    html+=archivadas.map(cardHtml).join('');
+    html+=archivadas.map(cardArchivadaHtml).join('');
   }
   el.innerHTML=html||'<p style="color:var(--muted2);font-size:.78rem">Sin ligas.</p>';
 }
@@ -76,8 +75,14 @@ export function renderLigasAdmin(){
 export function entrarLiga(lid){
   S.activeLiga=lid;
   const liga=S.ligas.find(l=>l.id===lid);
-  const sub=document.getElementById('admin-sub');if(sub)sub.textContent=liga&&liga.nombre||'';
+  const title=document.getElementById('admin-title');
+  if(title&&liga){
+    const parts=liga.nombre.split(' ').map(esc);
+    title.innerHTML=parts.slice(0,-1).join(' ')+' <em>'+parts.slice(-1)+'</em>';
+  }
+  const sub=document.getElementById('admin-sub');if(sub)sub.textContent=liga?[liga.dia,liga.cat].filter(Boolean).join(' · '):'';
   const navEl=document.getElementById('nav-liga-active');if(navEl)navEl.textContent=liga&&liga.nombre||'';
+  const backBtn=document.getElementById('back-to-ligas-btn');if(backBtn)backBtn.style.display='';
   const tabs=document.getElementById('main-tabs');if(tabs)tabs.style.display='';
   const btn=document.querySelector('.it[onclick*="resultados"]');if(btn)showAT('resultados',btn);
   renderAdmin();
@@ -86,9 +91,11 @@ export function entrarLiga(lid){
 export function volverALigas(){
   S.activeLiga=null;
   const tabs=document.getElementById('main-tabs');if(tabs)tabs.style.display='none';
+  const title=document.getElementById('admin-title');if(title)title.innerHTML='PANEL <em>ADMIN</em>';
   const sub=document.getElementById('admin-sub');if(sub)sub.textContent='Selecciona una liga para comenzar';
   const navEl=document.getElementById('nav-liga-active');if(navEl)navEl.textContent='';
-  const btn=document.querySelector('.it[onclick*="ligas"]');if(btn)showAT('ligas',btn);
+  const backBtn=document.getElementById('back-to-ligas-btn');if(backBtn)backBtn.style.display='none';
+  showAT('ligas');
 }
 
 export async function cerrarLiga(id){

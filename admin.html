@@ -17,14 +17,14 @@
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="lcard">
-    <div class="llogo">URBAN <span>PADEL</span></div>
+    <img src="logo.png" alt="Urban Padel Life" style="height:52px;filter:invert(1);object-fit:contain;margin-bottom:.75rem">
     <div class="lsub">Liga Americana · Guadalajara</div>
     <div class="ltitle">PANEL ADMIN</div>
     <div class="ldesc">Acceso restringido.</div>
     <input type="email" id="inp-email" class="linput" value="pablolc20111@gmail.com" placeholder="Correo">
     <input type="password" id="inp-pass" class="linput" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="lbtn" id="login-btn" onclick="doLogin()">
-      <span>🔐</span> Entrar
+      Entrar
     </button>
     <div class="lerr" id="login-err">Correo o contraseña incorrectos.</div>
   </div>
@@ -33,7 +33,10 @@
 <!-- APP -->
 <div id="app-screen">
   <nav>
-    <div class="logo">URBAN <span>PADEL</span> · <span style="color:var(--accent2);font-size:1rem">ADMIN</span></div>
+    <div class="logo" style="display:flex;align-items:center;gap:.6rem">
+      <img src="logo.png" alt="Urban Padel Life" style="height:28px;filter:invert(1);object-fit:contain">
+      <span style="color:var(--accent2);font-size:.8rem;font-weight:700;letter-spacing:1.5px">ADMIN</span>
+    </div>
     <div class="nav-right">
       <div class="uinfo" id="nav-liga-active" style="font-size:.78rem;color:var(--accent);font-weight:600;cursor:pointer;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="volverALigas()"></div>
       <button class="nbtn" onclick="volverALigas()" style="font-size:.72rem">Ligas</button>
@@ -42,26 +45,28 @@
     </div>
   </nav>
   <main>
-    <div class="sh" id="admin-header"><h1>PANEL <em>ADMIN</em></h1><p id="admin-sub">Selecciona una liga para comenzar</p></div>
+    <div class="sh" id="admin-header">
+      <button class="nbtn" id="back-to-ligas-btn" onclick="volverALigas()" style="display:none;margin-bottom:.6rem">← Ligas</button>
+      <h1 id="admin-title">PANEL <em>ADMIN</em></h1>
+      <p id="admin-sub">Selecciona una liga para comenzar</p>
+    </div>
 
     <div class="migrate-banner" id="migrate-banner" style="display:none">
-      <div style="font-size:1.8rem">☁️</div>
       <div style="flex:1">
         <div style="font-weight:700;color:var(--accent);font-size:.9rem;margin-bottom:.2rem">MIGRAR DATOS A FIREBASE</div>
         <div style="font-size:.76rem;color:var(--muted2)">Firebase está vacío. Sube los datos locales para que todos los vean en tiempo real.</div>
       </div>
-      <button class="btn bp bsm" id="migrate-btn">☁️ Subir a Firebase</button>
+      <button class="btn bp bsm" id="migrate-btn">Subir a Firebase</button>
     </div>
 
     <div class="itabs" id="main-tabs" style="display:none">
-      <button class="it active" onclick="showAT('ligas',this)">🏟️ Ligas</button>
-      <button class="it" onclick="showAT('patrocinadores',this)">🤝 Patrocinadores</button>
-      <button class="it" onclick="showAT('jugadores',this)">👤 Jugadores</button>
-      <button class="it" onclick="showAT('restricciones',this)">🚫 Restricciones</button>
-      <button class="it" onclick="showAT('jornada',this)">🕐 Horarios</button>
-      <button class="it" onclick="showAT('resultados',this)">⚡ Resultados</button>
-      <button class="it" onclick="showAT('promociones',this)">⬆️ Promociones</button>
-      <button class="it" onclick="showAT('imprimir',this)">🖨️ Imprimir</button>
+      <button class="it" onclick="showAT('patrocinadores',this)">Patrocinadores</button>
+      <button class="it" onclick="showAT('jugadores',this)">Jugadores</button>
+      <button class="it" onclick="showAT('restricciones',this)">Restricciones</button>
+      <button class="it" onclick="showAT('jornada',this)">Horarios</button>
+      <button class="it active" onclick="showAT('resultados',this)">Resultados</button>
+      <button class="it" onclick="showAT('promociones',this)">Promociones</button>
+      <button class="it" onclick="showAT('imprimir',this)">Imprimir</button>
     </div>
 
     <div id="at-ligas">
@@ -95,12 +100,11 @@
     </div>
     <div id="at-jugadores" style="display:none">
       <div style="background:linear-gradient(135deg,rgba(212,240,0,.07),rgba(0,229,158,.04));border:1px solid rgba(212,240,0,.2);border-radius:10px;padding:1rem 1.2rem;margin-bottom:1.1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
-        <div style="font-size:1.8rem">📊</div>
         <div style="flex:1"><div style="font-weight:700;color:var(--accent);font-size:.9rem;margin-bottom:.15rem">IMPORTAR EXCEL</div>
           <div style="font-size:.74rem;color:var(--muted2)">Columnas requeridas: <b style="color:var(--accent)">Nombre</b> y <b style="color:var(--accent)">Grupo</b></div></div>
         <div style="display:flex;gap:.5rem;align-items:center">
 
-          <label class="btn bp bsm" style="cursor:pointer">📂 Subir .xlsx
+          <label class="btn bp bsm" style="cursor:pointer">Subir .xlsx
             <input type="file" id="xl-file" accept=".xlsx,.xls" style="display:none" onchange="importExcel(this)">
           </label>
         </div>
@@ -122,7 +126,7 @@
           <p style="font-size:.72rem;color:var(--muted2);margin-bottom:.55rem">Arrastra del mejor al peor.</p>
 
           <div id="drag-cont"></div>
-          <div class="brow"><button class="btn bp bsm" onclick="saveOrder()">💾 Guardar orden</button></div>
+          <div class="brow"><button class="btn bp bsm" onclick="saveOrder()">Guardar orden</button></div>
         </div>
       </div>
       <div class="card"><div class="cl" style="margin-bottom:.65rem">JUGADORES</div><div id="plist"></div></div>
@@ -165,8 +169,8 @@
             <div class="unassigned-pool" id="unassigned-pool"><span style="color:var(--muted2);font-size:.78rem">Selecciona liga</span></div>
           </div>
           <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-            <button class="btn bs bsm" onclick="autoAssign()">🔀 Auto-asignar</button>
-            <button class="btn bp bsm" onclick="saveHorarios()">💾 Guardar Horarios</button>
+            <button class="btn bs bsm" onclick="autoAssign()">Auto-asignar</button>
+            <button class="btn bp bsm" onclick="saveHorarios()">Guardar Horarios</button>
           </div>
           <div id="j-prev" style="margin-top:.75rem"></div>
         </div>
@@ -207,7 +211,7 @@
           <div class="cl" style="margin-bottom:.5rem">PASO 2 — CONFIRMAR Y CREAR JORNADA</div>
           <p style="font-size:.78rem;color:var(--muted2);margin-bottom:.85rem">Revisa los grupos arriba. Cuando estés listo, crea la siguiente jornada con grupos reorganizados.</p>
           <div style="display:flex;gap:.65rem;flex-wrap:wrap;align-items:center">
-            <button class="btn bp" onclick="applyAndCreateJornada()">⚡ Aplicar y Crear Jornada</button>
+            <button class="btn bp" onclick="applyAndCreateJornada()">Aplicar y Crear Jornada</button>
             <div id="promo-next-info" style="font-size:.78rem;color:var(--muted2)"></div>
           </div>
         </div>
@@ -222,9 +226,9 @@
       </div>
       <div id="imp-jornada-info" style="margin-bottom:1rem"></div>
       <div style="display:flex;gap:.65rem;flex-wrap:wrap">
-        <button class="btn bp" onclick="printAnotaciones()">🖨️ Hojas de Anotación</button>
-        <button class="btn bs" onclick="printHorarios()">📋 Horarios & Grupos</button>
-        <button class="btn bs" onclick="printTabla()">🏆 Tabla General</button>
+        <button class="btn bp" onclick="printAnotaciones()">Hojas de Anotación</button>
+        <button class="btn bs" onclick="printHorarios()">Horarios & Grupos</button>
+        <button class="btn bs" onclick="printTabla()">Tabla General</button>
       </div>
     </div>
   </main>
@@ -234,25 +238,25 @@
   background:rgba(8,8,8,.97);backdrop-filter:blur(20px);border-top:1px solid var(--border);
   padding:.4rem 0;">
   <div style="display:flex;justify-content:space-around">
-    <button onclick="showAT('resultados',document.querySelector('.it[onclick*=resultados]'))" 
-      style="display:flex;flex-direction:column;align-items:center;gap:.2rem;background:transparent;
-      border:none;color:var(--muted2);font-family:'Outfit',sans-serif;font-size:.6rem;cursor:pointer;padding:.3rem .5rem">
-      <span style="font-size:1.3rem">⚡</span>Resultados
+    <button onclick="showAT('resultados',document.querySelector('.it[onclick*=resultados]'))"
+      style="background:transparent;
+      border:none;color:var(--muted2);font-family:'Outfit',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer;padding:.6rem .5rem">
+      Resultados
     </button>
     <button onclick="showAT('promociones',document.querySelector('.it[onclick*=promociones]'))"
-      style="display:flex;flex-direction:column;align-items:center;gap:.2rem;background:transparent;
-      border:none;color:var(--muted2);font-family:'Outfit',sans-serif;font-size:.6rem;cursor:pointer;padding:.3rem .5rem">
-      <span style="font-size:1.3rem">⬆️</span>Promos
+      style="background:transparent;
+      border:none;color:var(--muted2);font-family:'Outfit',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer;padding:.6rem .5rem">
+      Promos
     </button>
     <button onclick="showAT('jornada',document.querySelector('.it[onclick*=jornada]'))"
-      style="display:flex;flex-direction:column;align-items:center;gap:.2rem;background:transparent;
-      border:none;color:var(--muted2);font-family:'Outfit',sans-serif;font-size:.6rem;cursor:pointer;padding:.3rem .5rem">
-      <span style="font-size:1.3rem">📅</span>Jornada
+      style="background:transparent;
+      border:none;color:var(--muted2);font-family:'Outfit',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer;padding:.6rem .5rem">
+      Jornada
     </button>
     <button onclick="showAT('imprimir',document.querySelector('.it[onclick*=imprimir]'))"
-      style="display:flex;flex-direction:column;align-items:center;gap:.2rem;background:transparent;
-      border:none;color:var(--muted2);font-family:'Outfit',sans-serif;font-size:.6rem;cursor:pointer;padding:.3rem .5rem">
-      <span style="font-size:1.3rem">🖨️</span>Imprimir
+      style="background:transparent;
+      border:none;color:var(--muted2);font-family:'Outfit',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer;padding:.6rem .5rem">
+      Imprimir
     </button>
   </div>
 </div>
@@ -312,7 +316,7 @@
       <div class="fi full" id="pat-liga-wrap"><label>Liga</label><select id="pat-liga"><option value="">Todas las ligas</option></select></div>
       <div class="fi full" id="pat-hint" style="display:none">
         <div style="background:rgba(212,240,0,.06);border:1px solid rgba(212,240,0,.15);border-radius:7px;padding:.6rem .85rem;font-size:.75rem;color:var(--muted2)">
-          📐 Ratio recomendado <b style="color:var(--accent)">3:1</b> — ejemplo: 1200×400px o 900×300px
+          Ratio recomendado <b style="color:var(--accent)">3:1</b> — ejemplo: 1200×400px o 900×300px
         </div>
       </div>
       <div class="fi full">
@@ -320,7 +324,7 @@
         <div style="border:2px dashed var(--border2);border-radius:8px;padding:1.2rem;text-align:center;cursor:pointer;transition:border-color .15s" id="pat-drop-zone" onclick="document.getElementById('pat-file').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--border2)'" ondrop="handlePatDrop(event)">
           <input type="file" id="pat-file" accept="image/*" style="display:none" onchange="previewPat(this)">
           <div id="pat-preview" style="display:none;margin-bottom:.5rem"><img id="pat-preview-img" style="max-height:80px;max-width:200px;object-fit:contain;border-radius:4px"></div>
-          <div id="pat-drop-label" style="font-size:.8rem;color:var(--muted2)">📁 Click o arrastra tu logo aquí</div>
+          <div id="pat-drop-label" style="font-size:.8rem;color:var(--muted2)">Click o arrastra tu logo aquí</div>
           <div id="pat-upload-progress" style="display:none;margin-top:.5rem">
             <div style="height:4px;background:var(--border2);border-radius:2px;overflow:hidden"><div id="pat-progress-bar" style="height:100%;background:var(--accent);width:0%;transition:width .2s"></div></div>
             <div id="pat-progress-label" style="font-size:.72rem;color:var(--muted2);margin-top:.3rem">Subiendo...</div>

@@ -25,7 +25,7 @@ function doLogin(){
         auth.signOut();
         err.style.display='block';
         err.textContent='No tienes acceso de administrador.';
-        btn.innerHTML='<span>🔐</span> Entrar';
+        btn.textContent='Entrar';
         btn.disabled=false;
         return;
       }
@@ -35,7 +35,7 @@ function doLogin(){
       err.style.display='block';
       document.getElementById('inp-pass').value='';
       document.getElementById('inp-pass').focus();
-      btn.innerHTML='<span>🔐</span> Entrar';
+      btn.textContent='Entrar';
       btn.disabled=false;
     });
 }

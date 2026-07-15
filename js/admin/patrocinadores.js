@@ -23,8 +23,11 @@ export function renderPatrocinadores(){
     '</div>';
   }
 
+  // Banners son globales del club (se muestran en la vista de Ligas, fuera de
+  // cualquier liga). Los logos son específicos de la liga activa.
+  const lid=getActiveLiga();
   const banners=S.patrocinadores.filter(p=>p.tipo==='banner'||p.bannerUrl);
-  const logos=S.patrocinadores.filter(p=>p.tipo==='logo'||(!p.bannerUrl&&p.logoUrl));
+  const logos=S.patrocinadores.filter(p=>(p.tipo==='logo'||(!p.bannerUrl&&p.logoUrl))&&p.liga===lid);
 
   if(bannerEl) bannerEl.innerHTML=banners.length?banners.map(patCard).join(''):'<div style="font-size:.78rem;color:var(--muted2);padding:.5rem 0">Sin banners — agrega el primero</div>';
   if(logoEl) logoEl.innerHTML=logos.length?logos.map(patCard).join(''):'<div style="font-size:.78rem;color:var(--muted2);padding:.5rem 0">Sin logos — agrega el primero</div>';
@@ -47,7 +50,7 @@ export function openAddPatrocinador(mode){
   document.getElementById('pat-url').value='';
   document.getElementById('pat-logo-url').value='';
   document.getElementById('pat-preview').style.display='none';
-  document.getElementById('pat-drop-label').textContent='📁 Click o arrastra la imagen aquí';
+  document.getElementById('pat-drop-label').textContent='Click o arrastra la imagen aquí';
   document.getElementById('pat-upload-progress').style.display='none';
   openM('m-patrocinador');
 }

@@ -43,7 +43,7 @@ export function renderPromoP(){
   ${grupos.map(g=>{
     const st=calcGroupPos(lid,g,jId);
     return '<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.75rem">'+
-      '<div style="font-family:\'Bebas Neue\';font-size:1rem;letter-spacing:1px;margin-bottom:.45rem">GRUPO '+g+' <button class="promo-edit-btn" onclick="editGroupPos(this.dataset.lid,parseInt(this.dataset.g),this.dataset.jid)" data-g="'+g+'" data-lid="'+lid+'" data-jid="'+jId+'" style="font-size:.6rem;padding:1px 5px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--muted2);cursor:pointer">✏️</button></div>'+
+      '<div style="font-family:\'Bebas Neue\';font-size:1rem;letter-spacing:1px;margin-bottom:.45rem">GRUPO '+g+' <button class="promo-edit-btn" onclick="editGroupPos(this.dataset.lid,parseInt(this.dataset.g),this.dataset.jid)" data-g="'+g+'" data-lid="'+lid+'" data-jid="'+jId+'" style="font-size:.6rem;padding:1px 5px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--muted2);cursor:pointer">Editar</button></div>'+
       st.map((s,i)=>{
         const isWin=i<n&&g>1,isLose=i>=st.length-n&&g<grupos.length;
         const rankColor=isWin?'var(--accent3)':isLose?'var(--accent2)':'var(--muted)';
@@ -192,8 +192,8 @@ export async function applyAndCreateJornada(){
       <div style="font-weight:700;color:var(--accent3);margin-bottom:.6rem">✓ Jornada ${nextNum} creada — grupos actualizados</div>
       <p style="font-size:.78rem;color:var(--muted2);margin-bottom:.75rem">${moves.filter(m=>m.dir==='up').length} jugadores subieron · ${moves.filter(m=>m.dir==='down').length} bajaron</p>
       <div style="display:flex;gap:.65rem;flex-wrap:wrap">
-        <button class="btn bp bsm" onclick="goToJornada('${lid}',${nextNum})">📅 Asignar Horarios J${nextNum}</button>
-        <button class="btn bs bsm" onclick="goToImprimir('${lid}','${newJId}')">🖨️ Imprimir</button>
+        <button class="btn bp bsm" onclick="goToJornada('${lid}',${nextNum})">Asignar Horarios J${nextNum}</button>
+        <button class="btn bs bsm" onclick="goToImprimir('${lid}','${newJId}')">Imprimir</button>
       </div>
     </div>`;
   }
