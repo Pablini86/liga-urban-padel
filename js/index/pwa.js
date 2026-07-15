@@ -27,7 +27,7 @@ function showInstallBanner(){
     'padding:.85rem 1rem;display:flex;align-items:center;gap:.75rem;' +
     'box-shadow:0 4px 20px rgba(0,0,0,.5);animation:fi .3s ease';
   banner.innerHTML =
-    '<img src="favicon.png" style="width:40px;height:40px;border-radius:8px">' +
+    '<img src="img/favicon.png" style="width:40px;height:40px;border-radius:8px">' +
     '<div style="flex:1">' +
       '<div style="font-weight:700;font-size:.85rem">Urban Padel Life</div>' +
       '<div style="font-size:.72rem;color:var(--muted2)">Instala la app en tu cel</div>' +

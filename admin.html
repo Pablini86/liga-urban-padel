@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin · Liga Urban Padel</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="img/favicon-admin.png">
+<link rel="apple-touch-icon" href="img/favicon-admin.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -17,7 +19,7 @@
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="lcard">
-    <img src="logo.png" alt="Urban Padel Life" style="height:52px;filter:invert(1);object-fit:contain;margin-bottom:.75rem">
+    <img src="img/logo.png" alt="Urban Padel Life" style="height:52px;filter:invert(1);object-fit:contain;margin-bottom:.75rem">
     <div class="lsub">Liga Americana · Guadalajara</div>
     <div class="ltitle">PANEL ADMIN</div>
     <div class="ldesc">Acceso restringido.</div>
@@ -34,7 +36,7 @@
 <div id="app-screen">
   <nav>
     <div class="logo" style="display:flex;align-items:center;gap:.6rem">
-      <img src="logo.png" alt="Urban Padel Life" style="height:28px;filter:invert(1);object-fit:contain">
+      <img src="img/logo.png" alt="Urban Padel Life" style="height:28px;filter:invert(1);object-fit:contain">
       <span style="color:var(--accent2);font-size:.8rem;font-weight:700;letter-spacing:1.5px">ADMIN</span>
     </div>
     <div class="nav-right">
@@ -109,7 +111,7 @@
           <div style="font-size:.74rem;color:var(--muted2)">1. Descarga la plantilla · 2. Llena una fila por jugador con columnas <b style="color:var(--accent)">Nombre</b> y <b style="color:var(--accent)">Grupo</b> — cada grupo debe tener exactamente 4 jugadores · 3. Súbela aquí</div>
         </div>
         <div style="display:flex;gap:.5rem;align-items:center">
-          <a href="plantilla-jugadores.xlsx" download class="btn bs bsm">Descargar plantilla</a>
+          <a href="templates/plantilla-jugadores.xlsx" download class="btn bs bsm">Descargar plantilla</a>
           <label class="btn bp bsm" style="cursor:pointer">Subir .xlsx
             <input type="file" id="xl-file" accept=".xlsx,.xls" style="display:none" onchange="importExcel(this)">
           </label>

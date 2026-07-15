@@ -1,5 +1,5 @@
 const CACHE = 'urban-padel-v2';
-const ASSETS = ['/favicon.png', '/logo.png', '/manifest.json'];
+const ASSETS = ['/img/favicon.png', '/img/logo.png', '/manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));

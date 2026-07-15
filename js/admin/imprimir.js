@@ -3,7 +3,7 @@ import {populateSels} from './selects.js';
 
 const PCSS='*{margin:0;padding:0;box-sizing:border-box;}body{background:#fff;color:#000;font-family:\'Montserrat\',sans-serif;}@media print{body{margin:0;}@page{margin:0;size:A4;}}';
 const UG='#b8d400',UB='#0a0a0a';
-const LOGO_URL=new URL('logo.png',location.href).href;
+const LOGO_URL=new URL('img/logo.png',location.href).href;
 const logoImg=h=>`<img src="${LOGO_URL}" alt="Urban Padel Life" style="height:${h};filter:invert(1);object-fit:contain">`;
 
 export function renderImpPrev(){populateSels();const lid=getActiveLiga();const imjSel=document.getElementById('imj');if(lid&&imjSel){const js=S.jornadas.filter(j=>j.liga===lid).sort((a,b)=>a.num-b.num);const cur=imjSel.value;imjSel.innerHTML='<option value="">— selecciona —</option>'+js.map(j=>`<option value="${j.id}"${j.id===cur?' selected':''}>J${j.num} · ${j.fecha}</option>`).join('');if(!imjSel.value&&js.length)imjSel.value=js[0].id;}const jId=document.getElementById('imj')?.value;const infoEl=document.getElementById('imp-jornada-info');if(!infoEl)return;if(!jId){infoEl.innerHTML='';return;}const j=S.jornadas.find(x=>x.id===jId);if(!j){infoEl.innerHTML='';return;}const ms=S.partidos.filter(p=>p.jornadaId===jId);const grupos=[...new Set(ms.map(m=>m.grupo))].length;const fin=ms.filter(m=>m.finalizado&&m.gA!==null).length;infoEl.innerHTML=`<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.7rem 1rem;display:flex;gap:1.5rem;flex-wrap:wrap;font-size:.8rem"><span><b>${j.fecha||'Sin fecha'}</b></span><span><b>${grupos}</b> grupos</span><span><b style="color:var(--accent3)">${fin}</b>/${ms.length} sets</span><span>${(j.turnos||[]).join(' · ')}</span></div>`;}
