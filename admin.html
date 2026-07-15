@@ -106,9 +106,10 @@
     <div id="at-jugadores" style="display:none">
       <div style="background:linear-gradient(135deg,rgba(212,240,0,.07),rgba(0,229,158,.04));border:1px solid rgba(212,240,0,.2);border-radius:10px;padding:1rem 1.2rem;margin-bottom:1.1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
         <div style="flex:1"><div style="font-weight:700;color:var(--accent);font-size:.9rem;margin-bottom:.15rem">IMPORTAR EXCEL</div>
-          <div style="font-size:.74rem;color:var(--muted2)">Columnas requeridas: <b style="color:var(--accent)">Nombre</b> y <b style="color:var(--accent)">Grupo</b></div></div>
+          <div style="font-size:.74rem;color:var(--muted2)">1. Descarga la plantilla · 2. Llena una fila por jugador con columnas <b style="color:var(--accent)">Nombre</b> y <b style="color:var(--accent)">Grupo</b> — cada grupo debe tener exactamente 4 jugadores · 3. Súbela aquí</div>
+        </div>
         <div style="display:flex;gap:.5rem;align-items:center">
-
+          <a href="plantilla-jugadores.xlsx" download class="btn bs bsm">Descargar plantilla</a>
           <label class="btn bp bsm" style="cursor:pointer">Subir .xlsx
             <input type="file" id="xl-file" accept=".xlsx,.xls" style="display:none" onchange="importExcel(this)">
           </label>

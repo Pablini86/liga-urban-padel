@@ -17,8 +17,16 @@ export function renderPlist(){
   if(!ps.length){el.innerHTML='<p style="color:var(--muted2);font-size:.78rem">Sin jugadores</p>';return;}
   const byG={};
   ps.forEach(p=>{if(!byG[p.grupo])byG[p.grupo]=[];byG[p.grupo].push(p);});
+  const incompletos=Object.entries(byG).filter(([g,list])=>list.length!==4).sort((a,b)=>parseInt(a[0])-parseInt(b[0]));
   const liga=S.ligas.find(l=>l.id===lid);
-  var html='<div style="margin-bottom:.85rem">';
+  var html='';
+  if(incompletos.length){
+    html+='<div style="background:rgba(255,59,92,.08);border:1px solid rgba(255,59,92,.3);border-radius:8px;padding:.65rem .9rem;margin-bottom:.85rem;font-size:.76rem;color:var(--accent2)">'+
+      '<b>Grupos incompletos</b> — cada grupo debe tener exactamente 4 jugadores para generar partidos: '+
+      incompletos.map(([g,list])=>'Grupo '+esc(g)+' ('+list.length+')').join(', ')+
+    '</div>';
+  }
+  html+='<div style="margin-bottom:.85rem">';
   html+='<div style="font-size:.63rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.3rem">'+(liga?esc(liga.nombre):esc(lid))+' ('+ps.length+')</div>';
   html+='<div style="display:flex;flex-wrap:wrap;gap:.22rem">';
   ps.forEach(function(p){

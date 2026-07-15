@@ -19,7 +19,14 @@ export function updateJN(){
   const nextNum=(js.length?Math.max(...js.map(j=>j.num)):0)+1;
   const cur=jnEl.tagName==='SELECT'?jnEl.value:parseInt(jnEl.value);
   if(jnEl.tagName==='SELECT'){
+    // Ofrece siempre la siguiente jornada aunque todavía no exista en Firestore —
+    // se crea sola al guardar horarios (ver saveHorarios en jornada-schedule.js).
+    const nums=js.map(j=>j.num);
+    if(!nums.includes(nextNum))nums.push(nextNum);
     jnEl.innerHTML='<option value="">— selecciona —</option>'+
-      js.map(j=>'<option value="'+j.num+'"'+(j.num==cur?' selected':'')+'>J'+j.num+(j.fecha?' · '+j.fecha:'')+'</option>').join('');
+      nums.map(n=>{
+        const j=js.find(x=>x.num===n);
+        return '<option value="'+n+'"'+(n==cur?' selected':'')+'>J'+n+(j?.fecha?' · '+j.fecha:(j?'':' (nueva)'))+'</option>';
+      }).join('');
   } else {jnEl.value=nextNum;}
 }
