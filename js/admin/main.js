@@ -2,7 +2,7 @@ import {db, auth, ADMIN_EMAILS, S} from './state.js';
 import {openM, closeM} from './modal.js';
 import {showAT, renderAdmin} from './dispatch.js';
 import {checkMigrate, renderLigasAdmin, entrarLiga, volverALigas, cerrarLiga, createLiga, delLiga} from './ligas.js';
-import {addP, delP, editPNombre, renderPlist, renderDrag, saveOrder, importExcel} from './jugadores.js';
+import {addP, delP, editPNombre, renderPlist, renderDrag, saveOrder, importExcel, filterPlayers} from './jugadores.js';
 import {renderRestricciones, openAddRestriccion, toggleRstJornada, toggleRstChip, filterRestricciones, saveRestriccion, delRestriccion} from './restricciones.js';
 import {loadJornada, renderScheduleGrid, autoAssign, saveHorarios, goToJornada, goToImprimir} from './jornada-schedule.js';
 import {renderCaptura, capturaGoTo, toggleModo, updateDirect, updateScore, toggleAusente, saveGrupoCaptura} from './captura.js';
@@ -84,7 +84,7 @@ Object.assign(window, {
   openM, closeM,
   showAT,
   entrarLiga, volverALigas, cerrarLiga, createLiga, delLiga,
-  addP, delP, editPNombre, saveOrder, importExcel,
+  addP, delP, editPNombre, saveOrder, importExcel, filterPlayers,
   openAddRestriccion, toggleRstJornada, toggleRstChip, filterRestricciones, saveRestriccion, delRestriccion,
   loadJornada, renderScheduleGrid, autoAssign, saveHorarios, goToJornada, goToImprimir,
   renderCaptura, capturaGoTo, toggleModo, updateDirect, updateScore, toggleAusente, saveGrupoCaptura,

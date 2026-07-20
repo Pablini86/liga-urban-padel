@@ -17,28 +17,58 @@ export function renderPlist(){
   if(!ps.length){el.innerHTML='<p style="color:var(--muted2);font-size:.78rem">Sin jugadores</p>';return;}
   const byG={};
   ps.forEach(p=>{if(!byG[p.grupo])byG[p.grupo]=[];byG[p.grupo].push(p);});
-  const incompletos=Object.entries(byG).filter(([g,list])=>list.length!==4).sort((a,b)=>parseInt(a[0])-parseInt(b[0]));
-  const liga=S.ligas.find(l=>l.id===lid);
+  const grupos=Object.keys(byG).map(Number).sort((a,b)=>a-b);
+  const incompletos=grupos.filter(g=>byG[g].length!==4);
   var html='';
   if(incompletos.length){
     html+='<div style="background:rgba(255,59,92,.08);border:1px solid rgba(255,59,92,.3);border-radius:8px;padding:.65rem .9rem;margin-bottom:.85rem;font-size:.76rem;color:var(--accent2)">'+
       '<b>Grupos incompletos</b> — cada grupo debe tener exactamente 4 jugadores para generar partidos: '+
-      incompletos.map(([g,list])=>'Grupo '+esc(g)+' ('+list.length+')').join(', ')+
+      incompletos.map(g=>'Grupo '+g+' ('+byG[g].length+')').join(', ')+
     '</div>';
   }
-  html+='<div style="margin-bottom:.85rem">';
-  html+='<div style="font-size:.63rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.3rem">'+(liga?esc(liga.nombre):esc(lid))+' ('+ps.length+')</div>';
-  html+='<div style="display:flex;flex-wrap:wrap;gap:.22rem">';
-  ps.forEach(function(p){
-    html+='<div style="display:flex;align-items:center;gap:.3rem;background:var(--card2);border:1px solid var(--border);border-radius:5px;padding:.22rem .55rem;font-size:.74rem">';
-    html+='<span style="background:var(--border2);border-radius:50%;width:17px;height:17px;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700;color:var(--accent)">'+p.grupo+'</span>';
-    html+=esc(p.nombre);
-    html+='<button style="background:none;border:none;color:var(--accent3);cursor:pointer;font-size:.72rem" data-pid="'+p.id+'" onclick="editPNombre(this.dataset.pid)">&#9998;</button>';
-    html+='<button style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:.78rem" data-pid="'+p.id+'" onclick="delP(this.dataset.pid)">&#x2715;</button>';
-    html+='</div>';
+  html+='<div style="font-size:.72rem;color:var(--muted2);margin-bottom:.7rem">'+ps.length+' jugadores · '+grupos.length+' grupos</div>';
+  html+='<div id="plist-groups" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:.6rem">';
+  grupos.forEach(g=>{
+    const list=byG[g];
+    const complete=list.length===4;
+    html+='<div class="pgroup" data-grupo="'+g+'" style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:.7rem .8rem">';
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">'+
+      '<span style="font-family:\'Bebas Neue\',sans-serif;font-size:.95rem;letter-spacing:1px;color:var(--accent)">GRUPO '+g+'</span>'+
+      '<span style="font-size:.62rem;font-weight:700;padding:.12rem .45rem;border-radius:20px;background:'+(complete?'rgba(0,229,158,.1)':'rgba(255,59,92,.1)')+';color:'+(complete?'var(--accent3)':'var(--accent2)')+'">'+list.length+'/4</span>'+
+    '</div>';
+    html+='<div style="display:flex;flex-direction:column;gap:.25rem">';
+    list.forEach(function(p){
+      html+='<div class="prow" data-name="'+esc(p.nombre.toLowerCase())+'" style="display:flex;align-items:center;gap:.5rem;padding:.24rem .1rem">';
+      html+='<div class="pav" style="width:24px;height:24px;font-size:.68rem;flex-shrink:0">'+esc((p.nombre[0]||'?').toUpperCase())+'</div>';
+      html+='<span style="flex:1;font-size:.8rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.nombre)+'</span>';
+      html+='<button style="background:none;border:none;color:var(--accent3);cursor:pointer;font-size:.72rem;padding:2px" data-pid="'+p.id+'" onclick="editPNombre(this.dataset.pid)" title="Editar">&#9998;</button>';
+      html+='<button style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:.78rem;padding:2px" data-pid="'+p.id+'" onclick="delP(this.dataset.pid)" title="Eliminar">&#x2715;</button>';
+      html+='</div>';
+    });
+    html+='</div></div>';
   });
-  html+='</div></div>';
+  html+='</div>';
+  html+='<p id="plist-empty" style="display:none;color:var(--muted2);font-size:.78rem;margin-top:.7rem">Sin resultados</p>';
   el.innerHTML=html;
+  const search=document.getElementById('p-search');
+  if(search&&search.value)filterPlayers(search.value);
+}
+
+export function filterPlayers(q){
+  const term=q.toLowerCase().trim();
+  let anyVisible=false;
+  document.querySelectorAll('#plist-groups .pgroup').forEach(function(group){
+    let match=false;
+    group.querySelectorAll('.prow').forEach(function(row){
+      const ok=!term||row.dataset.name.includes(term);
+      row.style.display=ok?'':'none';
+      if(ok)match=true;
+    });
+    group.style.display=match?'':'none';
+    if(match)anyVisible=true;
+  });
+  const empty=document.getElementById('plist-empty');
+  if(empty)empty.style.display=anyVisible?'none':'';
 }
 
 let dsrc=null;

@@ -137,7 +137,14 @@
           <div class="brow"><button class="btn bp bsm" onclick="saveOrder()">Guardar orden</button></div>
         </div>
       </div>
-      <div class="card"><div class="cl" style="margin-bottom:.65rem">JUGADORES</div><div id="plist"></div></div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap;margin-bottom:.65rem">
+          <div class="cl" style="margin-bottom:0">JUGADORES</div>
+          <input id="p-search" type="text" placeholder="Buscar jugador..." oninput="filterPlayers(this.value)"
+            style="max-width:240px;padding:.45rem .75rem;border-radius:8px;font-size:.78rem">
+        </div>
+        <div id="plist"></div>
+      </div>
     </div>
 
     <div id="at-restricciones" style="display:none">
