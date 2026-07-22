@@ -188,6 +188,8 @@
             <button class="btn bp bsm" onclick="saveHorarios()">Guardar Horarios</button>
             <button class="btn bs bsm" onclick="restaurarGruposDesdePartidos()" title="Si la lista de Jugadores se desacomodó después de crear los partidos (por ejemplo al arrastrar en Reordenar), esto corrige el Grupo de cada jugador para que vuelva a coincidir con los partidos ya creados. No borra ni crea partidos.">⟲ Restaurar grupos (desde partidos)</button>
             <button class="btn bs bsm" onclick="resyncPartidosDesdeJugadores()" title="Si la lista de Jugadores cambió a propósito después de crear los partidos, esto actualiza los partidos para que coincidan con la lista (sin tocar grupos con resultados ya capturados)">⟳ Sincronizar partidos con Jugadores</button>
+            <button class="btn bs bsm" onclick="compararAcomodoRealJ1()" title="Compara el acomodo real (PDF de la Jornada 1) contra lo que hay en el sistema. Solo muestra un reporte, no cambia nada.">📋 Comparar acomodo real J1</button>
+            <button class="btn bp bsm" onclick="aplicarAcomodoRealJ1()" title="Corrige el Grupo de los jugadores y recrea los partidos de la Jornada 1 según el PDF. Pide confirmación y no toca nada si ya hay resultados capturados.">✅ Aplicar acomodo real J1</button>
           </div>
           <div id="j-prev" style="margin-top:.75rem"></div>
         </div>
