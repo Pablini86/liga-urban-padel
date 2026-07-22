@@ -5,7 +5,7 @@ import {checkMigrate, renderLigasAdmin, entrarLiga, volverALigas, cerrarLiga, cr
 import {addP, delP, editPNombre, reemplazarJugador, renderPlist, renderDrag, saveOrder, importExcel, filterPlayers} from './jugadores.js';
 import {renderRestricciones, openAddRestriccion, toggleRstJornada, toggleRstChip, filterRestricciones, saveRestriccion, delRestriccion} from './restricciones.js';
 import {loadJornada, renderScheduleGrid, autoAssign, saveHorarios, resyncPartidosDesdeJugadores, restaurarGruposDesdePartidos, compararAcomodoRealJ1, aplicarAcomodoRealJ1, goToJornada, goToImprimir} from './jornada-schedule.js';
-import {renderCaptura, capturaGoTo, toggleModo, updateDirect, updateScore, toggleAusente, saveGrupoCaptura} from './captura.js';
+import {renderCaptura, capturaGoTo, toggleModo, updateDirect, updateScore, toggleAusente, saveGrupoCaptura, borrarResultadoGrupo} from './captura.js';
 import {renderPromoP, applyAndCreateJornada, editGroupPos, onGrupoSelectChange, saveGroupEdit} from './promociones.js';
 import {renderImpPrev, printAnotaciones, printHorarios, printTabla} from './imprimir.js';
 import {renderPatrocinadores, openAddPatrocinador, handlePatDrop, previewPat, savePatrocinador, delPatrocinador} from './patrocinadores.js';
@@ -87,7 +87,7 @@ Object.assign(window, {
   addP, delP, editPNombre, reemplazarJugador, saveOrder, importExcel, filterPlayers,
   openAddRestriccion, toggleRstJornada, toggleRstChip, filterRestricciones, saveRestriccion, delRestriccion,
   loadJornada, renderScheduleGrid, autoAssign, saveHorarios, resyncPartidosDesdeJugadores, restaurarGruposDesdePartidos, compararAcomodoRealJ1, aplicarAcomodoRealJ1, goToJornada, goToImprimir,
-  renderCaptura, capturaGoTo, toggleModo, updateDirect, updateScore, toggleAusente, saveGrupoCaptura,
+  renderCaptura, capturaGoTo, toggleModo, updateDirect, updateScore, toggleAusente, saveGrupoCaptura, borrarResultadoGrupo,
   renderPromoP, applyAndCreateJornada, editGroupPos, onGrupoSelectChange, saveGroupEdit,
   renderImpPrev, printAnotaciones, printHorarios, printTabla,
   openAddPatrocinador, handlePatDrop, previewPat, savePatrocinador, delPatrocinador,
