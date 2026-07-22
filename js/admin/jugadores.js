@@ -1,7 +1,86 @@
 import {S, esc, uid, getActiveLiga, pById, fsSet, fsDel, fsBatch, toast} from './state.js';
 
 export async function addP(){const n=document.getElementById('pn').value.trim();if(!n){toast('Escribe nombre',1);return;}const liga=getActiveLiga();if(!liga){toast('Selecciona liga',1);return;}const ps=S.players.filter(p=>p.liga===liga);const p={id:uid(),nombre:n,cat:document.getElementById('pc').value,liga,tel:document.getElementById('pt').value,orden:ps.length,grupo:Math.floor(ps.length/4)+1,ausente:false};await fsSet('players',p.id,p);document.getElementById('pn').value='';document.getElementById('pt').value='';toast('✓ Jugador agregado');}
-export async function delP(id){await fsDel('players',id);toast('Eliminado');}
+export async function delP(id){
+  const p=pById(id);
+  const enPartidos=S.partidos.some(m=>[m.a1,m.a2,m.b1,m.b2].includes(id));
+  if(enPartidos){
+    if(!confirm('Este jugador ya tiene grupos/partidos generados. Si lo eliminas, esos partidos se van a quedar con "?" en vez de su nombre.\n\n¿Seguro que quieres eliminarlo?\n\nTip: si es porque va a entrar alguien nuevo en su lugar, mejor cancela y usa el botón "Reemplazar" (⇄) — así no se rompen los partidos ya armados.'))return;
+  } else if(!confirm('¿Eliminar a '+(p?p.nombre:'este jugador')+'?')){
+    return;
+  }
+  await fsDel('players',id);
+  toast('Eliminado');
+}
+
+// Encuentra jugadores que ya no existen como ficha pero siguen referenciados
+// en partidos generados (a1/a2/b1/b2) — quedan mostrando "?" en resultados.
+// Incluye su grupo y compañeros (los que sí se resuelven) para poder
+// identificar de quién se trata al reemplazarlo.
+export function findOrphanPlayerIds(){
+  const lid=getActiveLiga();
+  const knownIds=new Set(S.players.map(p=>p.id));
+  const orphanIds=new Set();
+  S.partidos.filter(m=>m.liga===lid).forEach(m=>{
+    [m.a1,m.a2,m.b1,m.b2].forEach(pid=>{if(pid&&!knownIds.has(pid))orphanIds.add(pid);});
+  });
+  return [...orphanIds].map(id=>{
+    const m=S.partidos.find(x=>x.liga===lid&&[x.a1,x.a2,x.b1,x.b2].includes(id));
+    const grupo=m?m.grupo:null;
+    const compIds=grupo!=null?[...new Set(S.partidos.filter(x=>x.liga===lid&&x.grupo===grupo).flatMap(x=>[x.a1,x.a2,x.b1,x.b2]))].filter(x=>x!==id):[];
+    const companeros=compIds.map(cid=>S.players.find(p=>p.id===cid)).filter(Boolean).map(p=>p.nombre);
+    return {id,grupo,companeros};
+  });
+}
+
+// Reutiliza el mismo ID (de un jugador activo o de uno ya eliminado pero
+// referenciado en partidos) asignándole los datos del jugador nuevo. Como los
+// partidos guardan el ID y no el nombre, esto los "repara" sin tener que
+// reescribir cada partido. Si el jugador nuevo ya se había agregado por
+// separado (ficha con ID distinto y sin partidos todavía), permite elegirlo
+// de una lista y elimina esa ficha duplicada en el mismo paso.
+export async function reemplazarJugador(id){
+  const p=pById(id);
+  const orphanInfo=!p?findOrphanPlayerIds().find(o=>o.id===id):null;
+  const liga=p?p.liga:getActiveLiga();
+  const grupo=p?p.grupo:(orphanInfo?.grupo||1);
+  const actual=p?p.nombre:'(jugador ya eliminado)';
+  const contexto='Grupo '+grupo+(orphanInfo?.companeros.length?' — juega con: '+orphanInfo.companeros.join(', '):'');
+
+  // Candidatos: jugadores de esta liga ya agregados pero que aún no están en ningún partido
+  const enPartidoIds=new Set(S.partidos.filter(x=>x.liga===liga).flatMap(x=>[x.a1,x.a2,x.b1,x.b2]));
+  const candidatos=S.players.filter(x=>x.liga===liga&&x.id!==id&&!enPartidoIds.has(x.id));
+
+  let nombre=null,dup=null;
+  if(candidatos.length){
+    const lista=candidatos.map((c,i)=>(i+1)+'. '+c.nombre).join('\n');
+    const resp=prompt('Reemplazar a '+actual+'\n'+contexto+'\n\nEscribe el número del jugador que ya agregaste y entra en su lugar, o escribe su nombre si aún no lo has agregado:\n\n'+lista);
+    if(!resp||!resp.trim())return;
+    const n=parseInt(resp.trim());
+    if(!isNaN(n)&&candidatos[n-1]){dup=candidatos[n-1];nombre=dup.nombre;}
+    else nombre=resp.trim();
+  } else {
+    const resp=prompt('Reemplazar a '+actual+' ('+contexto+') por (nombre del jugador nuevo):',p?p.nombre:'');
+    if(!resp||!resp.trim())return;
+    nombre=resp.trim();
+  }
+
+  if(!confirm('¿Reemplazar a '+actual+' por "'+nombre+'"?\n\nConserva su grupo, cancha y horario ya asignados.'+(dup?'\n\nSe eliminará la ficha duplicada de "'+dup.nombre+'" que ya existía.':'')))return;
+
+  const ps=S.players.filter(x=>x.liga===liga);
+  const base=p||dup||{cat:'Avanzado',tel:'',orden:ps.length,ausente:false};
+  const data={...base,id,nombre,liga,grupo};
+  Object.keys(data).forEach(k=>{if(k.startsWith('ausente_j_')||k.startsWith('direct_j_'))delete data[k];});
+  const ops=[{op:'set',col:'players',id,data}];
+  if(dup)ops.push({op:'del',col:'players',id:dup.id});
+  // Por si además ya existía otra ficha manual con el mismo nombre
+  const otroDup=S.players.find(x=>x.liga===liga&&x.id!==id&&x.id!==dup?.id&&x.nombre.trim().toLowerCase()===nombre.toLowerCase());
+  if(otroDup&&confirm('Ya existe otra ficha con el nombre "'+nombre+'". ¿Eliminarla para no duplicar?')){
+    ops.push({op:'del',col:'players',id:otroDup.id});
+  }
+  await fsBatch(ops);
+  toast('✓ Jugador reemplazado');
+}
 export async function editPNombre(id){
   const p=pById(id);if(!p)return;
   const nuevo=prompt('Editar nombre:',p.nombre);
@@ -14,12 +93,23 @@ export function renderPlist(){
   if(!el)return;
   const lid=getActiveLiga();
   const ps=S.players.filter(p=>p.liga===lid);
-  if(!ps.length){el.innerHTML='<p style="color:var(--muted2);font-size:.78rem">Sin jugadores</p>';return;}
+  const orphans=findOrphanPlayerIds();
+  if(!ps.length&&!orphans.length){el.innerHTML='<p style="color:var(--muted2);font-size:.78rem">Sin jugadores</p>';return;}
   const byG={};
   ps.forEach(p=>{if(!byG[p.grupo])byG[p.grupo]=[];byG[p.grupo].push(p);});
   const grupos=Object.keys(byG).map(Number).sort((a,b)=>a-b);
   const incompletos=grupos.filter(g=>byG[g].length!==4);
   var html='';
+  if(orphans.length){
+    html+='<div style="background:rgba(255,59,92,.08);border:1px solid rgba(255,59,92,.3);border-radius:8px;padding:.65rem .9rem;margin-bottom:.85rem;font-size:.76rem;color:var(--accent2)">'+
+      '<b>Jugadores pendientes de reemplazo</b> — hay '+orphans.length+' jugador(es) eliminado(s) que siguen asignados a partidos ya generados. Sus nombres se muestran como "?" en resultados. Usa "Reemplazar" para ponerles el nombre del jugador nuevo sin perder el grupo/horario ya armado:'+
+      '<div style="margin-top:.5rem;display:flex;flex-direction:column;gap:.35rem">'+
+      orphans.map(o=>'<div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">'+
+        '<span>Grupo '+(o.grupo??'?')+(o.companeros.length?' — con '+o.companeros.map(esc).join(', '):'')+'</span>'+
+        '<button class="btn bs bsm" data-pid="'+o.id+'" onclick="reemplazarJugador(this.dataset.pid)">⇄ Reemplazar</button>'+
+      '</div>').join('')+
+      '</div></div>';
+  }
   if(incompletos.length){
     html+='<div style="background:rgba(255,59,92,.08);border:1px solid rgba(255,59,92,.3);border-radius:8px;padding:.65rem .9rem;margin-bottom:.85rem;font-size:.76rem;color:var(--accent2)">'+
       '<b>Grupos incompletos</b> — cada grupo debe tener exactamente 4 jugadores para generar partidos: '+
@@ -42,6 +132,7 @@ export function renderPlist(){
       html+='<div class="pav" style="width:24px;height:24px;font-size:.68rem;flex-shrink:0">'+esc((p.nombre[0]||'?').toUpperCase())+'</div>';
       html+='<span style="flex:1;font-size:.8rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.nombre)+'</span>';
       html+='<button style="background:none;border:none;color:var(--accent3);cursor:pointer;font-size:.72rem;padding:2px" data-pid="'+p.id+'" onclick="editPNombre(this.dataset.pid)" title="Editar">&#9998;</button>';
+      html+='<button style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:.78rem;padding:2px" data-pid="'+p.id+'" onclick="reemplazarJugador(this.dataset.pid)" title="Reemplazar por otro jugador (conserva grupo y partidos)">&#8646;</button>';
       html+='<button style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:.78rem;padding:2px" data-pid="'+p.id+'" onclick="delP(this.dataset.pid)" title="Eliminar">&#x2715;</button>';
       html+='</div>';
     });
