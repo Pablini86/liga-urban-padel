@@ -227,6 +227,98 @@ export async function saveHorarios(){
   document.getElementById('j-prev').innerHTML=`<div style="background:rgba(0,229,158,.05);border:1px solid rgba(0,229,158,.2);border-radius:7px;padding:.7rem .85rem;font-size:.78rem;color:var(--accent3)">✓ Jornada ${num} lista · ${Object.keys(asgn).length} grupos asignados</div>`;
 }
 
+// Regenera los partidos de una jornada a partir de la lista de Jugadores
+// actual (fuente de verdad), grupo por grupo, conservando la cancha/turno que
+// ya tenía cada grupo. Sirve cuando la lista de Jugadores se editó (drag,
+// Excel, reemplazos) después de generar los partidos y "Resultados" se quedó
+// con la formación vieja. No toca grupos cuyos partidos ya tienen resultados
+// capturados Y coinciden con la lista actual; si ya tienen resultados pero NO
+// coinciden, los deja intactos y avisa para revisarlos a mano (para no borrar
+// puntos ya jugados).
+export async function resyncPartidosDesdeJugadores(){
+  const lid=getActiveLiga();
+  const num=parseInt(document.getElementById('jn')?.value);
+  const jornada=S.jornadas.find(j=>j.liga===lid&&j.num===num);
+  if(!lid||!jornada){toast('Selecciona liga y jornada',1);return;}
+
+  const canchaMap={};
+  S.partidos.filter(m=>m.jornadaId===jornada.id).forEach(m=>{
+    if(!canchaMap[m.grupo])canchaMap[m.grupo]={cancha:m.cancha,turno:m.turno};
+  });
+  const ps=S.players.filter(p=>p.liga===lid);
+  const grupos=[...new Set([...ps.map(p=>p.grupo),...Object.keys(canchaMap).map(Number)])].sort((a,b)=>a-b);
+
+  const ops=[];
+  const sinTocar=[],regenerados=[],incompletos=[];
+  grupos.forEach(g=>{
+    const gps=ps.filter(p=>p.grupo===g).sort((a,b)=>(a.orden||0)-(b.orden||0));
+    const oldMs=S.partidos.filter(m=>m.jornadaId===jornada.id&&m.grupo===g);
+    const oldIds=[...new Set(oldMs.flatMap(m=>[m.a1,m.a2,m.b1,m.b2]))];
+    const newIds=gps.map(p=>p.id);
+    const igual=oldIds.length===newIds.length&&oldIds.every(pid=>newIds.includes(pid));
+    if(igual)return;
+    const yaJugado=oldMs.length>0&&oldMs.every(m=>m.finalizado);
+    if(yaJugado){sinTocar.push(g);return;}
+    if(gps.length!==4){incompletos.push(g);return;}
+    oldMs.forEach(m=>ops.push({op:'del',col:'partidos',id:m.id}));
+    const ct=canchaMap[g]||{cancha:'C1',turno:(jornada.turnos&&jornada.turnos[0])||'18:00'};
+    const [p1,p2,p3,p4]=gps;
+    [[p1,p2,p3,p4],[p1,p3,p2,p4],[p1,p4,p2,p3]].forEach(([a1,a2,b1,b2],si)=>{
+      const mid=uid();
+      ops.push({op:'set',col:'partidos',id:mid,data:{id:mid,liga:lid,jornadaId:jornada.id,jornada:jornada.num,grupo:g,set:si+1,turno:ct.turno,cancha:ct.cancha,a1:a1.id,a2:a2.id,b1:b1.id,b2:b2.id,gA:null,gB:null,finalizado:false,ausente:false}});
+    });
+    regenerados.push(g);
+  });
+
+  if(!regenerados.length){
+    let msg='Ya estaba todo sincronizado';
+    if(sinTocar.length)msg+=' (Grupo(s) '+sinTocar.join(', ')+' no coinciden pero ya tienen resultados capturados — revísalos a mano)';
+    toast(msg,sinTocar.length?1:0);
+    return;
+  }
+  if(!confirm('Se van a regenerar los partidos de '+regenerados.length+' grupo(s) para que coincidan con la lista de Jugadores: Grupo(s) '+regenerados.join(', ')+'.\n\nConservan su cancha y horario ya asignados. No se toca ningún grupo con resultados ya capturados.\n\n¿Continuar?'))return;
+
+  await fsBatch(ops);
+  let msg='✓ '+regenerados.length+' grupo(s) sincronizado(s): '+regenerados.join(', ');
+  if(sinTocar.length)msg+=' · '+sinTocar.length+' con resultados ya capturados, sin tocar';
+  if(incompletos.length)msg+=' · Grupo(s) '+incompletos.join(', ')+' sin 4 jugadores, no se generaron';
+  toast(msg);
+  loadJornada();
+}
+
+// Corrige el campo Grupo de los jugadores en la pestaña Jugadores para que
+// vuelva a coincidir con los partidos ya generados de una jornada — sin
+// tocar ni borrar ningún partido. Sirve para deshacer un reacomodo accidental
+// (arrastrar en "Reordenar grupos", importar Excel, etc.) que movió a varios
+// jugadores de grupo después de que los partidos ya se habían creado. Los
+// jugadores que ya no tienen ficha (huecos) se quedan igual — para esos usa
+// "Reemplazar" (⇄) en la lista de Jugadores.
+export async function restaurarGruposDesdePartidos(){
+  const lid=getActiveLiga();
+  const num=parseInt(document.getElementById('jn')?.value);
+  const jornada=S.jornadas.find(j=>j.liga===lid&&j.num===num);
+  if(!lid||!jornada){toast('Selecciona liga y jornada',1);return;}
+
+  const byId=new Map(S.players.filter(p=>p.liga===lid).map(p=>[p.id,p]));
+  const grupoCorrecto={};
+  S.partidos.filter(m=>m.jornadaId===jornada.id).forEach(m=>{
+    [m.a1,m.a2,m.b1,m.b2].forEach(pid=>{if(byId.has(pid))grupoCorrecto[pid]=m.grupo;});
+  });
+
+  const cambios=[];
+  Object.entries(grupoCorrecto).forEach(([pid,g])=>{
+    const p=byId.get(pid);
+    if(p.grupo!==g)cambios.push({p,grupo:g});
+  });
+
+  if(!cambios.length){toast('La lista de Jugadores ya coincide con los partidos de esta jornada',1);return;}
+  if(!confirm('Se va a corregir el Grupo de '+cambios.length+' jugador(es) en la lista de Jugadores para que vuelva a coincidir con los partidos ya creados de la Jornada '+num+'.\n\nNo se borra ni se crea ningún partido — solo se corrige el número de Grupo en su ficha.\n\n¿Continuar?'))return;
+
+  const ops=cambios.map(({p,grupo})=>({op:'set',col:'players',id:p.id,data:{...p,grupo}}));
+  await fsBatch(ops);
+  toast('✓ '+cambios.length+' jugador(es) corregido(s) en la lista de Jugadores');
+}
+
 export function goToJornada(lid,num){S.activeLiga=lid;const btn=document.querySelector('.it[onclick*="jornada"]');if(btn)showAT('jornada',btn);const jnEl=document.getElementById('jn');if(jnEl){jnEl.value=num;}}
 
 export function goToImprimir(lid,jId){S.activeLiga=lid;const btn=document.querySelector('.it[onclick*="imprimir"]');if(btn)showAT('imprimir',btn);setTimeout(()=>{const imjEl=document.getElementById('imj');if(imjEl){imjEl.value=jId;renderImpPrev();}},100);}
