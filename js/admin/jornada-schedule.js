@@ -191,40 +191,46 @@ export async function saveHorarios(){
   // Update or create matches with correct cancha/turno
   const ps=S.players.filter(p=>p.liga===lid);
   const grupos=[...new Set(ps.map(p=>p.grupo))].sort((a,b)=>a-b);
-  // Check if matches already exist for this jornada
+  // Update cancha/turno on matches that already exist
   const existingMatches=S.partidos.filter(p=>p.jornadaId===existing.id);
-  if(existingMatches.length===0){
-    // Create matches
-    grupos.forEach((g,gi)=>{
-      const gps=[...ps.filter(p=>p.grupo===g)].sort((a,b)=>a.orden-b.orden);
-      if(gps.length<4)return;
-      const[p1,p2,p3,p4]=gps;
-      const slotEntry=Object.entries(asgn).find(([k,v])=>v===g);
-      let turno=turnos[0],cancha='C1';
-      if(slotEntry){const parts=slotEntry[0].split('_');turno=parts[0];cancha=parts[1];}
-      else{turno=turnos[Math.min(Math.floor(gi/canchas),turnos.length-1)];cancha='C'+((gi%canchas)+1);}
-      [[p1,p2,p3,p4],[p1,p3,p2,p4],[p1,p4,p2,p3]].forEach(([a1,a2,b1,b2],si)=>{
-        const m={id:uid(),liga:lid,jornadaId:existing.id,jornada:num,grupo:g,set:si+1,
-          turno,cancha,a1:a1.id,a2:a2.id,b1:b1.id,b2:b2.id,gA:null,gB:null,finalizado:false,ausente:false};
-        ops.push({op:'set',col:'partidos',id:m.id,data:m});
-      });
-    });
-  } else {
-    // Update cancha/turno on existing matches
-    existingMatches.forEach(m=>{
-      const slotEntry=Object.entries(asgn).find(([k,v])=>v===m.grupo);
-      if(slotEntry){
-        const parts=slotEntry[0].split('_');
-        const turno=parts[0],cancha=parts[1];
-        if(m.turno!==turno||m.cancha!==cancha){
-          ops.push({op:'set',col:'partidos',id:m.id,data:{...m,turno,cancha}});
-        }
+  const gruposConPartidos=new Set(existingMatches.map(m=>m.grupo));
+  existingMatches.forEach(m=>{
+    const slotEntry=Object.entries(asgn).find(([k,v])=>v===m.grupo);
+    if(slotEntry){
+      const parts=slotEntry[0].split('_');
+      const turno=parts[0],cancha=parts[1];
+      if(m.turno!==turno||m.cancha!==cancha){
+        ops.push({op:'set',col:'partidos',id:m.id,data:{...m,turno,cancha}});
       }
+    }
+  });
+  // Create matches for any group that doesn't have them yet (first save,
+  // or groups added/assigned after an earlier partial save). Only groups
+  // that already have a slot in the schedule grid get partidos — a group
+  // sitting in the "no asignados" pool must be dragged onto a slot first,
+  // never guessed a cancha/turno.
+  const incompletos=[],sinHorario=[];
+  grupos.filter(g=>!gruposConPartidos.has(g)).forEach(g=>{
+    const gps=[...ps.filter(p=>p.grupo===g)].sort((a,b)=>a.orden-b.orden);
+    if(gps.length<4){incompletos.push(g);return;}
+    const slotEntry=Object.entries(asgn).find(([k,v])=>v===g);
+    if(!slotEntry){sinHorario.push(g);return;}
+    const[p1,p2,p3,p4]=gps;
+    const parts=slotEntry[0].split('_');const turno=parts[0],cancha=parts[1];
+    [[p1,p2,p3,p4],[p1,p3,p2,p4],[p1,p4,p2,p3]].forEach(([a1,a2,b1,b2],si)=>{
+      const m={id:uid(),liga:lid,jornadaId:existing.id,jornada:num,grupo:g,set:si+1,
+        turno,cancha,a1:a1.id,a2:a2.id,b1:b1.id,b2:b2.id,gA:null,gB:null,finalizado:false,ausente:false};
+      ops.push({op:'set',col:'partidos',id:m.id,data:m});
     });
-  }
+  });
   await fsBatch(ops);
-  toast('✓ Horarios guardados · J'+num);
-  document.getElementById('j-prev').innerHTML=`<div style="background:rgba(0,229,158,.05);border:1px solid rgba(0,229,158,.2);border-radius:7px;padding:.7rem .85rem;font-size:.78rem;color:var(--accent3)">✓ Jornada ${num} lista · ${Object.keys(asgn).length} grupos asignados</div>`;
+  const avisos=[];
+  if(incompletos.length)avisos.push('Grupo(s) '+incompletos.join(', ')+' sin 4 jugadores');
+  if(sinHorario.length)avisos.push('Grupo(s) '+sinHorario.join(', ')+' sin horario asignado (arrástralos a una cancha)');
+  let msg='✓ Horarios guardados · J'+num;
+  if(avisos.length)msg+=' · '+avisos.join(' · ');
+  toast(msg,avisos.length?1:0);
+  document.getElementById('j-prev').innerHTML=`<div style="background:rgba(0,229,158,.05);border:1px solid rgba(0,229,158,.2);border-radius:7px;padding:.7rem .85rem;font-size:.78rem;color:var(--accent3)">✓ Jornada ${num} lista · ${Object.keys(asgn).length} grupos asignados${avisos.length?' · '+avisos.join(' · '):''}</div>`;
 }
 
 // Regenera los partidos de una jornada a partir de la lista de Jugadores
