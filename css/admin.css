@@ -98,6 +98,8 @@ select option{background:var(--dark);}
 .collapsible-title{font-weight:700;font-size:.88rem;}
 .collapsible-sub{font-size:.72rem;color:var(--muted2);margin-top:.15rem;}
 .collapsible-body{margin-top:.9rem;}
+.help-q{display:inline-flex;align-items:center;justify-content:center;width:1.15rem;height:1.15rem;border-radius:50%;border:1px solid var(--muted2);color:var(--muted2);font-size:.68rem;font-weight:700;cursor:pointer;flex-shrink:0;user-select:none;}
+.help-q:hover{border-color:var(--accent);color:var(--accent);}
 #toast{position:fixed;bottom:1.4rem;left:50%;transform:translateX(-50%) translateY(80px);background:var(--accent);color:var(--black);padding:.52rem 1.25rem;border-radius:7px;font-weight:700;font-size:.8rem;z-index:999;transition:transform .25s ease;pointer-events:none;}
 #toast.show{transform:translateX(-50%) translateY(0);}
 #toast.err{background:var(--accent2);color:#fff;}
