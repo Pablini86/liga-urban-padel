@@ -7,7 +7,7 @@ import {renderRestricciones, openAddRestriccion, toggleRstJornada, toggleRstChip
 import {loadJornada, renderScheduleGrid, autoAssign, saveHorarios, resyncPartidosDesdeJugadores, restaurarGruposDesdePartidos, goToJornada, goToImprimir} from './jornada-schedule.js';
 import {renderCaptura, capturaGoTo, toggleModo, updateDirect, updateScore, toggleAusente, saveGrupoCaptura, borrarResultadoGrupo} from './captura.js';
 import {renderPromoP, applyAndCreateJornada, editGroupPos, onGrupoSelectChange, saveGroupEdit} from './promociones.js';
-import {renderImpPrev, printAnotaciones, printHorarios, printTabla} from './imprimir.js';
+import {renderImpPrev, printAnotaciones, printHorarios, printTabla, exportGruposWhatsApp} from './imprimir.js';
 import {renderPatrocinadores, openAddPatrocinador, handlePatDrop, previewPat, savePatrocinador, delPatrocinador} from './patrocinadores.js';
 
 // ═══ LOGIN ═══
@@ -89,6 +89,6 @@ Object.assign(window, {
   loadJornada, renderScheduleGrid, autoAssign, saveHorarios, resyncPartidosDesdeJugadores, restaurarGruposDesdePartidos, goToJornada, goToImprimir,
   renderCaptura, capturaGoTo, toggleModo, updateDirect, updateScore, toggleAusente, saveGrupoCaptura, borrarResultadoGrupo,
   renderPromoP, applyAndCreateJornada, editGroupPos, onGrupoSelectChange, saveGroupEdit,
-  renderImpPrev, printAnotaciones, printHorarios, printTabla,
+  renderImpPrev, printAnotaciones, printHorarios, printTabla, exportGruposWhatsApp,
   openAddPatrocinador, handlePatDrop, previewPat, savePatrocinador, delPatrocinador,
 });
