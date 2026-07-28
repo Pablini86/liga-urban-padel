@@ -25,8 +25,16 @@ function fitFont(ctx,text,maxWidth,baseSize,family){let size=baseSize;ctx.font=`
 export async function exportGruposWhatsApp(){
   const d=getImpData();if(!d)return;
   const{liga,jornada,lid,jId}=d;
+  // Se abre la pestaña ya (síncrono, dentro del click) para que el navegador
+  // no la trate como popup no solicitado — si se abriera después de los
+  // await de abajo, el gesto del click ya habría "expirado" y algunos
+  // navegadores (sobre todo Safari/iOS) la bloquean en silencio.
+  const win=window.open('','_blank');
+  if(!win){toast('Permite ventanas emergentes',1);return;}
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Generando…</title></head><body style="background:#0a0a0a;color:#999;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p>Generando imagen…</p></body></html>');
+  win.document.close();
   const ms=S.partidos.filter(p=>p.jornadaId===jId);
-  if(!ms.length){toast('Esta jornada no tiene partidos generados',1);return;}
+  if(!ms.length){win.close();toast('Esta jornada no tiene partidos generados',1);return;}
   const turnos=(jornada.turnos&&jornada.turnos.length)?jornada.turnos:[...new Set(ms.map(m=>m.turno))].sort();
   const canchasN=jornada.canchas||Math.max(6,...ms.map(m=>parseInt((m.cancha||'C0').replace('C',''))||0));
   const cells={};ms.forEach(m=>{if(m.turno&&m.cancha)cells[m.turno+'_'+m.cancha]=m.grupo;});
@@ -45,7 +53,7 @@ export async function exportGruposWhatsApp(){
   const ICON_URL=new URL('img/favicon.png',location.href).href;
   let logo,icon;
   try{[logo,icon]=await Promise.all([loadImg(LOGO_URL),loadImg(ICON_URL)]);}
-  catch(e){toast('No se pudieron cargar los logos',1);return;}
+  catch(e){win.close();toast('No se pudieron cargar los logos',1);return;}
   logo=invertImageData(logo);icon=invertImageData(icon);
 
   const scale=2,W=1600,horaW=140;
@@ -124,14 +132,11 @@ export async function exportGruposWhatsApp(){
   ctx.textAlign='center';
   ctx.fillText('LOS HORARIOS PUEDEN VARIAR HASTA 10 MINUTOS.',W/2,H-footH/2+2);
 
-  canvas.toBlob(blob=>{
-    if(!blob){toast('No se pudo generar la imagen',1);return;}
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url;a.download=`Grupos_Jornada${jornada.num}_${slug(liga.nombre)}.png`;
-    document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),2000);
-  },'image/png');
+  const fname=`Grupos_Jornada${jornada.num}_${slug(liga.nombre)}.png`;
+  const dataUrl=canvas.toDataURL('image/png');
+  win.document.open();
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${fname}</title><style>*{box-sizing:border-box}body{background:#0a0a0a;margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:14px;padding:16px;font-family:'Outfit',Arial,sans-serif}img{max-width:100%;height:auto;border-radius:8px;display:block}a.dl{background:${UG};color:${UB};font-weight:700;text-decoration:none;padding:10px 22px;border-radius:6px;font-size:14px}p{color:#888;font-size:12.5px;text-align:center;margin:0;max-width:480px}</style></head><body><img src="${dataUrl}" alt="${fname}"><a class="dl" href="${dataUrl}" download="${fname}">⬇ Descargar imagen</a><p>En el celular: mantén presionada la imagen y elige "Guardar imagen" o "Compartir" para mandarla directo por WhatsApp.</p></body></html>`);
+  win.document.close();
 }
 
 export function printHorarios(){const d=getImpData();if(!d)return;const{liga,jornada,grupos,lid,jId}=d;const ps=S.players.filter(p=>p.liga===lid);const gData=grupos.map(g=>{const gms=S.partidos.filter(m=>m.jornadaId===jId&&m.grupo===g);if(!gms.length)return null;return{g,cancha:g,turno:gms[0].turno,players:ps.filter(p=>p.grupo===g).sort((a,b)=>a.orden-b.orden)};}).filter(Boolean);let rows='';gData.forEach(({g,cancha,turno,players})=>{players.slice(0,4).forEach((p,i)=>{rows+=`<tr class="${i===0?'first':''}"><td class="pn">${esc(p.nombre)}</td><td class="ca">${i===0?cancha:''}</td><td class="ho">${i===0?turno:''}</td></tr>`;});rows+=`<tr class="sp"><td colspan="3"></td></tr>`;});const fname=`Horarios_Jornada${jornada.num}_${slug(liga.nombre)}`;let html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${fname}</title><style>${PCSS}.page{width:210mm;min-height:297mm;padding:0;position:relative;}.hdr{background:${UB};padding:5mm 15mm 4.5mm;display:flex;align-items:flex-end;justify-content:space-between;}.hl{font-family:'Bebas Neue',sans-serif;font-size:22pt;letter-spacing:5px;color:${UG};}.hl span{color:#fff;}.hs{font-size:7pt;color:#555;margin-top:1.5mm;}.hr{text-align:right;}.hrl{font-size:8pt;color:#777;text-transform:uppercase;}.hrj{font-family:'Bebas Neue',sans-serif;font-size:28pt;letter-spacing:3px;color:#fff;line-height:1;}.hrf{font-size:8.5pt;color:${UG};}.str{height:3mm;background:${UG};}.ct{padding:4mm 15mm;}.ch{display:flex;border-bottom:2px solid #000;padding-bottom:1.5mm;margin-bottom:1mm;}.cn{flex:1;font-size:7pt;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#666;}.cc{width:22mm;text-align:center;font-size:7pt;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#666;}.chor{width:28mm;text-align:right;font-size:7pt;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#666;}table{width:100%;border-collapse:collapse;}td{font-size:9.5pt;vertical-align:middle;padding:.5mm 0;}td.pn{padding-right:4mm;}td.ca{width:22mm;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:13pt;}td.ho{width:28mm;text-align:right;font-size:9pt;font-weight:600;}tr.first td.pn{font-weight:700;}tr.sp td{height:3mm;border-bottom:1px solid #ebebeb;}.ft{position:absolute;bottom:5mm;left:0;right:0;text-align:center;font-size:7pt;color:#bbb;}</style></head><body><div class="page"><div class="hdr"><div>${logoImg('9mm')}<div class="hs">Av. de las Rosas 171 · Col. Chapalita · Guadalajara</div></div><div class="hr"><div class="hrl">${esc(liga.nombre)}</div><div class="hrj">JORNADA ${jornada.num}</div><div class="hrf">${esc(jornada.fecha||'')} · ${esc((jornada.turnos||[]).join(' · '))}</div></div></div><div class="str"></div><div class="ct"><div class="ch"><span class="cn">NOMBRE</span><span class="cc">CANCHA</span><span class="chor">HORARIO</span></div><table><tbody>${rows}</tbody></table></div><div class="ft">Urban Padel Life · ${esc(liga.nombre)} · Jornada ${jornada.num}</div></div></body></html>`;openPrint(html);}
