@@ -269,6 +269,7 @@ export function onGrupoSelectChange(sel, grupoOrigen, jId){
   swapRow.innerHTML=
     '<span style="font-size:.75rem;color:var(--accent3);font-weight:600;width:100%">↔ ¿Quién viene a G'+grupoOrigen+' desde G'+newGrupo+'?</span>'+
     '<select id="swap-player-sel" style="flex:1;background:var(--card2);border:1px solid var(--accent3);border-radius:5px;color:var(--text);font-family:Outfit,sans-serif;font-size:.8rem;padding:4px 6px">'+
+      '<option value="">— sin intercambio, solo mover —</option>'+
       allOtherPlayers.map(p=>'<option value="'+p.id+'"'+(p.grupo===newGrupo?' selected':'')+'>G'+p.grupo+' · '+esc(p.nombre)+'</option>').join('')+
     '</select>';
 
@@ -310,19 +311,28 @@ export async function saveGroupEdit(lid,g){
     if(p) affected.add(p.grupo);
   });
 
+  // Build updated player map using finalGroups
+  const updMap={};
+  S.players.filter(p=>p.liga===lid).forEach(p=>updMap[p.id]={...p});
+  Object.entries(finalGroups).forEach(([pid,newG])=>{
+    if(updMap[pid]) updMap[pid].grupo=newG;
+  });
+
+  // Cada grupo afectado debe quedar en exactamente 4: si no, los partidos no se
+  // pueden generar (guardar así dejaba grupos incompletos sin aviso real).
+  const bad=[...affected].filter(grp=>Object.values(updMap).filter(p=>p.liga===lid&&p.grupo===grp).length!==4);
+  if(bad.length){
+    const detalle=bad.map(grp=>'G'+grp+' quedaría con '+Object.values(updMap).filter(p=>p.liga===lid&&p.grupo===grp).length).join(' · ');
+    toast(detalle+' — cada grupo debe tener 4. Ajusta el intercambio antes de guardar',1);
+    return;
+  }
+
   closeM('m-liga');
 
   // Cancha map
   const canchaMap={};
   S.partidos.filter(m=>m.jornadaId===jId).forEach(m=>{
     if(!canchaMap[m.grupo])canchaMap[m.grupo]={cancha:m.cancha,turno:m.turno};
-  });
-
-  // Build updated player map using finalGroups
-  const updMap={};
-  S.players.filter(p=>p.liga===lid).forEach(p=>updMap[p.id]={...p});
-  Object.entries(finalGroups).forEach(([pid,newG])=>{
-    if(updMap[pid]) updMap[pid].grupo=newG;
   });
 
   // Recalc orden
