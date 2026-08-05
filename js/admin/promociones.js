@@ -334,6 +334,17 @@ export async function saveGroupEdit(lid,g){
   S.partidos.filter(m=>m.jornadaId===jId).forEach(m=>{
     if(!canchaMap[m.grupo])canchaMap[m.grupo]={cancha:m.cancha,turno:m.turno};
   });
+  // Casillas cancha×horario libres en esta jornada, para un grupo afectado que
+  // nunca tuvo partidos (p.ej. se saltó antes por tener menos de 4 jugadores)
+  // y por lo tanto no aparece en canchaMap.
+  const usedSlots=new Set(Object.values(canchaMap).map(ct=>ct.turno+'|'+ct.cancha));
+  const freeSlots=[];
+  (jornada.turnos&&jornada.turnos.length?jornada.turnos:['18:00']).forEach(t=>{
+    for(let c=1;c<=(jornada.canchas||6);c++){
+      const key=t+'|C'+c;
+      if(!usedSlots.has(key))freeSlots.push({turno:t,cancha:'C'+c});
+    }
+  });
 
   // Recalc orden
   affected.forEach(grp=>{
@@ -356,7 +367,7 @@ export async function saveGroupEdit(lid,g){
   affected.forEach(grp=>{
     const gps=Object.values(updMap).filter(p=>p.liga===lid&&p.grupo===grp).sort((a,b)=>(a.orden||0)-(b.orden||0));
     if(gps.length<4){toast('G'+grp+' tiene '+gps.length+' jugadores',1);return;}
-    const ct=canchaMap[grp]||{cancha:'C1',turno:'18:00'};
+    const ct=canchaMap[grp]||freeSlots.shift()||{cancha:'C1',turno:'18:00'};
     const [p1,p2,p3,p4]=gps;
     [[p1,p2,p3,p4],[p1,p3,p2,p4],[p1,p4,p2,p3]].forEach(([a1,a2,b1x,b2x],si)=>{
       const mid=uid();
