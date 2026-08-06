@@ -5,7 +5,7 @@ import {renderHome} from './home.js';
 import {renderLiga} from './liga.js';
 import {toggleJornada} from './jornadas.js';
 import {showHorarioJornada, renderHorariosSingle} from './horarios.js';
-import {openPlayer, closeModal} from './player-modal.js';
+import {openPlayer, closeModal, switchPlayerTab} from './player-modal.js';
 import {installPWA, dismissInstall} from './pwa.js';
 import './effects.js';
 
@@ -28,6 +28,6 @@ Object.assign(window, {
   carMove, carGo,
   toggleJornada,
   showHorarioJornada, renderHorariosSingle,
-  openPlayer, closeModal,
+  openPlayer, closeModal, switchPlayerTab,
   installPWA, dismissInstall,
 });

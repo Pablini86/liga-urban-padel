@@ -65,6 +65,7 @@
       <button class="it" onclick="showAT('restricciones',this)">Restricciones</button>
       <button class="it" onclick="showAT('jornada',this)">Horarios</button>
       <button class="it active" onclick="showAT('resultados',this)">Resultados</button>
+      <button class="it" onclick="showAT('tabla',this)">Tabla</button>
       <button class="it" onclick="showAT('promociones',this)">Promociones</button>
       <button class="it" onclick="showAT('imprimir',this)">Imprimir</button>
     </div>
@@ -218,6 +219,14 @@
       <div id="captura-progress" style="margin-bottom:1.2rem"></div>
       <div id="captura-nav" class="captura-nav"></div>
       <div id="captura-grupo"></div>
+    </div>
+
+    <div id="at-tabla" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem;flex-wrap:wrap;gap:.5rem">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:2px">TABLA GENERAL</div>
+        <button class="btn bs bsm" onclick="printTabla()">Imprimir / PDF</button>
+      </div>
+      <div id="tabla-admin-wrap"></div>
     </div>
 
     <div id="at-promociones" style="display:none">

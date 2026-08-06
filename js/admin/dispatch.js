@@ -8,7 +8,8 @@ import {renderImpPrev} from './imprimir.js';
 import {renderScheduleGrid} from './jornada-schedule.js';
 import {renderRestricciones} from './restricciones.js';
 import {renderPatrocinadores} from './patrocinadores.js';
+import {renderTablaAdmin} from './tabla.js';
 
-export function renderAdmin(){renderLigasAdmin();if(S.activeLiga){renderPlist();renderDrag();populateSels();updateJN();renderCaptura();renderPromoP();renderImpPrev();renderScheduleGrid();}}
+export function renderAdmin(){renderLigasAdmin();if(S.activeLiga){renderPlist();renderDrag();populateSels();updateJN();renderCaptura();renderPromoP();renderImpPrev();renderScheduleGrid();renderTablaAdmin();}}
 
-export function showAT(id,btn){document.querySelectorAll('[id^="at-"]').forEach(e=>e.style.display='none');document.querySelectorAll('.it').forEach(t=>t.classList.remove('active'));document.getElementById('at-'+id).style.display='';if(btn)btn.classList.add('active');if(id==='jornada')renderScheduleGrid();if(id==='imprimir'){populateSels();renderImpPrev();}if(id==='resultados'){populateSels();renderCaptura();}if(id==='promociones'){populateSels();renderPromoP();}if(id==='restricciones')renderRestricciones();if(id==='patrocinadores')renderPatrocinadores();if(id==='promociones'){populateSels();renderPromoP();}}
+export function showAT(id,btn){document.querySelectorAll('[id^="at-"]').forEach(e=>e.style.display='none');document.querySelectorAll('.it').forEach(t=>t.classList.remove('active'));document.getElementById('at-'+id).style.display='';if(btn)btn.classList.add('active');if(id==='jornada')renderScheduleGrid();if(id==='imprimir'){populateSels();renderImpPrev();}if(id==='resultados'){populateSels();renderCaptura();}if(id==='tabla')renderTablaAdmin();if(id==='promociones'){populateSels();renderPromoP();}if(id==='restricciones')renderRestricciones();if(id==='patrocinadores')renderPatrocinadores();if(id==='promociones'){populateSels();renderPromoP();}}
