@@ -6,7 +6,27 @@ const modoDirecto={};
 let capturaGrupoActivo=null,capturaJornadaActiva=null;
 
 const csKey=(jId,g)=>`${jId}_${g}`;
-function getCS(jId,g){const k=csKey(jId,g);if(!capturaState[k]){const gms=S.partidos.filter(m=>m.jornadaId===jId&&m.grupo===g).sort((a,b)=>a.set-b.set);capturaState[k]={scores:gms.map(m=>m.finalizado?[m.gA,m.gB]:[null,null]),ausentes:new Set(),directPts:{}};}return capturaState[k];}
+// El estado de captura vive solo en memoria (capturaState), así que al
+// recargar la página se reinicia. Por eso, al armarlo por primera vez para
+// un grupo, hay que reconstruir "ausentes" y "directPts" a partir de lo que
+// ya está guardado en el jugador (ausente_j_<jId> / direct_j_<jId>) — si no,
+// los checkboxes de suplente se ven vacíos aunque el dato siga en Firebase.
+function getCS(jId,g){
+  const k=csKey(jId,g);
+  if(!capturaState[k]){
+    const gms=S.partidos.filter(m=>m.jornadaId===jId&&m.grupo===g).sort((a,b)=>a.set-b.set);
+    const pids=gms.length?[gms[0].a1,gms[0].a2,gms[0].b1,gms[0].b2]:[];
+    const ausentes=new Set(pids.filter(pid=>{const p=pById(pid);return p&&p['ausente_j_'+jId];}));
+    const directPts={};
+    pids.forEach(pid=>{const p=pById(pid);if(p&&p['direct_j_'+jId]!==undefined)directPts[pid]=p['direct_j_'+jId];});
+    capturaState[k]={scores:gms.map(m=>m.finalizado?[m.gA,m.gB]:[null,null]),ausentes,directPts};
+    // Mismo problema con el modo DIRECTO/SETS: si el grupo ya se guardó en
+    // modo directo (partido.directMode), que la UI lo respete al recargar
+    // en vez de volver siempre a "SETS" por default.
+    if(modoDirecto[k]===undefined)modoDirecto[k]=!!gms[0]?.directMode;
+  }
+  return capturaState[k];
+}
 
 export function renderCaptura(){const lid=getActiveLiga();const jSel=document.getElementById('rj');if(lid&&jSel){const js=S.jornadas.filter(j=>j.liga===lid&&S.partidos.some(p=>p.jornadaId===j.id)).sort((a,b)=>b.num-a.num);const cur=jSel.value;jSel.innerHTML='<option value="">— selecciona —</option>'+js.map(j=>'<option value="'+j.id+'"'+(j.id===cur?' selected':'')+'>J'+j.num+' · '+(j.fecha||'')+'</option>').join('');// Auto-select last jornada (js is sorted newest-first) when nothing chosen yet
 if(!jSel.value&&js.length){jSel.value=js[0].id;}}const jId=document.getElementById('rj')?.value;if(!jId){document.getElementById('captura-progress').innerHTML='';document.getElementById('captura-nav').innerHTML='';document.getElementById('captura-grupo').innerHTML='';return;}const ms=S.partidos.filter(p=>p.jornadaId===jId);const grupos=[...new Set(ms.map(m=>m.grupo))].sort((a,b)=>a-b);if(capturaJornadaActiva!==jId||!capturaGrupoActivo||!grupos.includes(capturaGrupoActivo)){
