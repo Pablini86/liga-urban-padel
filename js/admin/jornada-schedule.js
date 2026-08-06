@@ -151,11 +151,30 @@ export function autoAssign(){
   }
 
   renderScheduleGrid();
-  const conflictCount=Object.entries(asgn).filter(([k,g])=>conflictos(g,k.split('_')[0])>0).length;
-  if(conflictCount>0)
-    toast('Auto-asignado · '+conflictCount+' grupo(s) con restricciones no evitables',1);
-  else
+
+  // Detalle de qué jugador choca con qué turno, para poder mostrar la lista
+  // completa (el toast solo alcanza para un conteo, no para el detalle).
+  const detalle=[];
+  Object.entries(asgn).forEach(([k,g])=>{
+    const turno=k.split('_')[0];
+    const rsts=getRestriccionesForTurno(lid,turno,jId);
+    const gps=S.players.filter(p=>p.liga===lid&&p.grupo===g);
+    rsts.filter(rp=>gps.find(gp=>gp.id===rp.id)).forEach(rp=>detalle.push({grupo:g,turno,nombre:pShort(rp.nombre)}));
+  });
+
+  const prev=document.getElementById('j-prev');
+  if(detalle.length){
+    toast('Auto-asignado · '+detalle.length+' restriccion(es) no evitables',1);
+    if(prev)prev.innerHTML=`<div style="background:rgba(255,59,92,.06);border:1px solid rgba(255,59,92,.25);border-radius:9px;padding:.75rem .9rem">
+      <div style="font-weight:700;color:var(--accent2);font-size:.82rem;margin-bottom:.5rem">Restricciones no evitables</div>
+      ${detalle.map(d=>`<div style="font-size:.78rem;color:var(--muted2);padding:.2rem 0">
+        <span style="color:var(--text);font-weight:600">${d.nombre}</span> no puede jugar a las ${d.turno} · Grupo ${d.grupo}
+      </div>`).join('')}
+    </div>`;
+  } else {
     toast('✓ Auto-asignado respetando restricciones');
+    if(prev)prev.innerHTML='';
+  }
 }
 
 // ═══ GENERAR JORNADA ═══
