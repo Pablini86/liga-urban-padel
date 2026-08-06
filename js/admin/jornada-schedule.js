@@ -118,35 +118,101 @@ export function autoAssign(){
   scheduleAssignments[tempKey]={};
   const asgn=scheduleAssignments[tempKey];
 
-  // Build slots list: [turno_C1, turno_C2, ...]
-  const slots=[];
-  for(let t=0;t<turnos.length;t++)
-    for(let c=1;c<=canchas;c++)
-      slots.push({key:turnos[t]+'_C'+c, turno:turnos[t]});
-
-  // Score: how many players in grupo have restriction for this turno
-  function conflictos(grupo, turno){
+  // Cuántos jugadores del grupo tienen restricción para ese turno
+  function conflictos(grupo,turno){
     const rsts=getRestriccionesForTurno(lid,turno,jId);
     const gps=S.players.filter(p=>p.liga===lid&&p.grupo===grupo);
     return rsts.filter(rp=>gps.find(gp=>gp.id===rp.id)).length;
   }
 
-  // Assign each grupo to best available slot (fewest conflicts)
-  const pending=[...grupos];
-  const usedSlots=new Set();
+  // Historial de horarios por JUGADOR (no por grupo — los grupos cambian cada
+  // jornada). Cuenta en cuántas jornadas YA JUGADAS (num < la actual, así no
+  // cuenta jornadas futuras pre-creadas) cada jugador ya jugó en cada turno,
+  // para rotar y no repetirle siempre el mismo horario. `?? -Infinity` deja
+  // pasar partidos viejos que no tengan el campo `jornada` (datos legacy) en
+  // vez de excluirlos del historial por accidente.
+  const historial={};
+  const vistos=new Set();
+  S.partidos.filter(m=>m.liga===lid&&(m.jornada??-Infinity)<jnum&&m.turno).forEach(m=>{
+    [m.a1,m.a2,m.b1,m.b2].forEach(pid=>{
+      if(!pid)return;
+      const key=m.jornada+'_'+pid+'_'+m.turno;
+      if(vistos.has(key))return;
+      vistos.add(key);
+      historial[pid]=historial[pid]||{};
+      historial[pid][m.turno]=(historial[pid][m.turno]||0)+1;
+    });
+  });
+  function rotacion(grupo,turno){
+    const gps=S.players.filter(p=>p.liga===lid&&p.grupo===grupo);
+    if(!gps.length)return 0;
+    return gps.reduce((sum,p)=>sum+((historial[p.id]||{})[turno]||0),0)/gps.length;
+  }
 
-  while(pending.length>0){
-    let bestGrupo=null, bestSlot=null, bestScore=999;
-    for(const grupo of pending){
-      for(const slot of slots){
-        if(usedSlots.has(slot.key))continue;
-        const score=conflictos(grupo,slot.turno);
-        if(score<bestScore){bestScore=score;bestGrupo=grupo;bestSlot=slot;}
+  const capacidad={};turnos.forEach(t=>capacidad[t]=canchas);
+  const canchasUsadas={};turnos.forEach(t=>canchasUsadas[t]=new Set());
+  function colocar(turno,grupo){
+    let cancha=null;
+    for(let c=1;c<=canchas;c++){if(!canchasUsadas[turno].has(c)){cancha='C'+c;canchasUsadas[turno].add(c);break;}}
+    asgn[turno+'_'+cancha]=grupo;
+    capacidad[turno]--;
+  }
+  // Turnos con cupo y CERO restricciones para el grupo, del más a menos
+  // conveniente (menos veces jugado = rotación, luego el más temprano).
+  function opcionesLibres(grupo){
+    return turnos.filter(t=>capacidad[t]>0&&conflictos(grupo,t)===0)
+      .map(t=>({turno:t,rotacion:rotacion(grupo,t)}))
+      .sort((a,b)=>a.rotacion-b.rotacion||turnos.indexOf(a.turno)-turnos.indexOf(b.turno));
+  }
+
+  const pending=[...grupos];
+
+  // Fase 1: coloca primero, sin tocar restricciones, a los grupos que SÍ
+  // pueden quedar 100% libres de conflicto — empezando por el que tiene
+  // MENOS horarios libres disponibles (para no quitarle su única opción
+  // limpia a otro grupo más apretado). Esto es lo que hace que, si el 6pm no
+  // se puede, busque directo el siguiente horario disponible en vez de
+  // asignar al azar y dejarle el hueco malo a otro grupo que sí lo necesitaba.
+  // Si dos grupos empatan en cantidad de opciones libres, gana el que más
+  // pierde por no ir primero (mayor diferencia entre su peor y su mejor
+  // opción de rotación) — si no, el desempate cae en el orden de la lista de
+  // grupos y la rotación deja de tener efecto real la mitad de las veces.
+  const spread=ops=>ops[ops.length-1].rotacion-ops[0].rotacion;
+  let avanzo=true;
+  while(avanzo){
+    avanzo=false;
+    let mejorGrupo=null,mejorOps=null;
+    for(const g of pending){
+      const ops=opcionesLibres(g);
+      if(!ops.length)continue;
+      if(!mejorOps||ops.length<mejorOps.length||(ops.length===mejorOps.length&&spread(ops)>spread(mejorOps))){
+        mejorGrupo=g;mejorOps=ops;
       }
     }
-    if(!bestSlot)break;
-    asgn[bestSlot.key]=bestGrupo;
-    usedSlots.add(bestSlot.key);
+    if(mejorGrupo){
+      colocar(mejorOps[0].turno,mejorGrupo);
+      pending.splice(pending.indexOf(mejorGrupo),1);
+      avanzo=true;
+    }
+  }
+
+  // Fase 2: lo que queda (si queda) ya no tiene ningún horario libre de
+  // restricciones — el conflicto es inevitable para alguien. Aquí sí se
+  // busca, entre todo lo pendiente, el par grupo+turno con menor score
+  // (restricciones ante todo, rotación de desempate) para repartir el daño
+  // lo mejor posible.
+  while(pending.length>0){
+    const cuposRestantes=turnos.filter(t=>capacidad[t]>0);
+    if(!cuposRestantes.length)break;
+    let bestGrupo=null,bestTurno=null,bestScore=Infinity;
+    for(const g of pending){
+      for(const t of cuposRestantes){
+        const score=conflictos(g,t)*1000+rotacion(g,t);
+        if(score<bestScore){bestScore=score;bestGrupo=g;bestTurno=t;}
+      }
+    }
+    if(!bestGrupo)break;
+    colocar(bestTurno,bestGrupo);
     pending.splice(pending.indexOf(bestGrupo),1);
   }
 
