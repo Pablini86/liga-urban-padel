@@ -130,7 +130,7 @@ export async function exportGruposWhatsApp(){
 
   ctx.fillStyle='#666';ctx.font="11px 'Outfit', Arial, sans-serif";
   ctx.textAlign='center';
-  ctx.fillText('LOS HORARIOS PUEDEN VARIAR HASTA 10 MINUTOS.',W/2,H-footH/2+2);
+  ctx.fillText('POR FAVOR SE PUNTUAL EN TU HORARIO, AGRADECEMOS TU PUNTUALIDAD.',W/2,H-footH/2+2);
 
   const fname=`Grupos_Jornada${jornada.num}_${slug(liga.nombre)}.png`;
   const dataUrl=canvas.toDataURL('image/png');
