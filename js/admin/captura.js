@@ -16,9 +16,18 @@ function getCS(jId,g){
   if(!capturaState[k]){
     const gms=S.partidos.filter(m=>m.jornadaId===jId&&m.grupo===g).sort((a,b)=>a.set-b.set);
     const pids=gms.length?[gms[0].a1,gms[0].a2,gms[0].b1,gms[0].b2]:[];
-    const ausentes=new Set(pids.filter(pid=>{const p=pById(pid);return p&&p['ausente_j_'+jId];}));
+    // Los listeners de Firestore (players/partidos/jornadas) llegan por
+    // separado y sin orden garantizado. Si esta función corre cuando ya
+    // hay partidos pero los jugadores todavía no llegaron, pById() no
+    // encuentra a nadie y "ausentes" se calcularía vacío — y como el
+    // resultado se cachea, quedaría vacío PARA SIEMPRE en esta sesión aunque
+    // los jugadores lleguen un instante después. Mejor no cachear nada
+    // todavía y reintentar en el próximo render (dispara automático cuando
+    // llegue cada colección).
+    if(!pids.length||!pids.every(pid=>pById(pid)))return{scores:[],ausentes:new Set(),directPts:{}};
+    const ausentes=new Set(pids.filter(pid=>pById(pid)['ausente_j_'+jId]));
     const directPts={};
-    pids.forEach(pid=>{const p=pById(pid);if(p&&p['direct_j_'+jId]!==undefined)directPts[pid]=p['direct_j_'+jId];});
+    pids.forEach(pid=>{const p=pById(pid);if(p['direct_j_'+jId]!==undefined)directPts[pid]=p['direct_j_'+jId];});
     capturaState[k]={scores:gms.map(m=>m.finalizado?[m.gA,m.gB]:[null,null]),ausentes,directPts};
     // Mismo problema con el modo DIRECTO/SETS: si el grupo ya se guardó en
     // modo directo (partido.directMode), que la UI lo respete al recargar
