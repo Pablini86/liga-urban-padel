@@ -11,7 +11,6 @@ export function renderPromoP(){
     const js=S.jornadas.filter(j=>j.liga===lid).sort((a,b)=>b.num-a.num);
     const cur=jSel.value;
     jSel.innerHTML='<option value="">— selecciona —</option>'+js.map(j=>'<option value="'+j.id+'"'+(j.id===cur?' selected':'')+'>J'+j.num+' · '+(j.fecha||'')+'</option>').join('');
-    if(!jSel.value&&js.length)jSel.value=js[0].id;
   }
   const jId=document.getElementById('prj')?.value;
   const actEl=document.getElementById('promo-actions');
