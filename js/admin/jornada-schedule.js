@@ -433,7 +433,14 @@ export async function delJornadaActual(){
   const num=parseInt(document.getElementById('jn')?.value);
   if(!lid||!num){toast('Selecciona una jornada',1);return;}
   const jornada=S.jornadas.find(j=>j.liga===lid&&j.num===num);
-  if(!jornada){toast('Jornada no encontrada',1);return;}
+  if(!jornada){
+    // El selector "Jornada" siempre ofrece la siguiente como "(nueva)" aunque
+    // todavía no exista en Firestore (ver updateJN en selects.js) — si el
+    // usuario la borró justo antes, esa "jornada" que ve ahora es sólo esa
+    // sugerencia, no una jornada real: no hay nada que eliminar.
+    toast('J'+num+' todavía no existe — es sólo la sugerencia para la próxima jornada, no hay nada que borrar',1);
+    return;
+  }
   const partidos=S.partidos.filter(p=>p.jornadaId===jornada.id);
   const jugados=partidos.filter(p=>p.finalizado);
   const msg=jugados.length
