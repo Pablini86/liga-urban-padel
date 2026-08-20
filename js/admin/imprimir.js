@@ -2,10 +2,11 @@ import {S, esc, getActiveLiga, pFN, calcGlobal, calcPtsJornada, toast} from './s
 import {populateSels} from './selects.js';
 
 const PCSS='*{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}body{background:#fff;color:#000;font-family:\'Montserrat\',sans-serif;}@media print{body{margin:0;}@page{margin:0;size:A4;}}';
-const UG='#b8d400',UB='#0a0a0a';
-const LOGO_URL=new URL('img/logo.png',location.href).href;
+export const UG='#b8d400',UB='#0a0a0a';
+export const LOGO_URL=new URL('img/logo.png',location.href).href;
+export const ICON_URL=new URL('img/favicon.png',location.href).href;
 const logoImg=h=>`<img src="${LOGO_URL}" alt="Urban Padel Life" style="height:${h};filter:invert(1);object-fit:contain">`;
-const slug=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+export const slug=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
 
 export function renderImpPrev(){populateSels();const lid=getActiveLiga();const imjSel=document.getElementById('imj');if(lid&&imjSel){const js=S.jornadas.filter(j=>j.liga===lid).sort((a,b)=>a.num-b.num);const cur=imjSel.value;imjSel.innerHTML='<option value="">— selecciona —</option>'+js.map(j=>`<option value="${j.id}"${j.id===cur?' selected':''}>J${j.num} · ${j.fecha}</option>`).join('');}const jId=document.getElementById('imj')?.value;const infoEl=document.getElementById('imp-jornada-info');if(!infoEl)return;if(!jId){infoEl.innerHTML='';return;}const j=S.jornadas.find(x=>x.id===jId);if(!j){infoEl.innerHTML='';return;}const ms=S.partidos.filter(p=>p.jornadaId===jId);const grupos=[...new Set(ms.map(m=>m.grupo))].length;const fin=ms.filter(m=>m.finalizado&&m.gA!==null).length;infoEl.innerHTML=`<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.7rem 1rem;display:flex;gap:1.5rem;flex-wrap:wrap;font-size:.8rem"><span><b>${j.fecha||'Sin fecha'}</b></span><span><b>${grupos}</b> grupos</span><span><b style="color:var(--accent3)">${fin}</b>/${ms.length} sets</span><span>${(j.turnos||[]).join(' · ')}</span></div>`;}
 function getImpData(){const lid=getActiveLiga();const jId=document.getElementById('imj')?.value;if(!lid||!jId){toast('Selecciona liga y jornada',1);return null;}return{liga:S.ligas.find(l=>l.id===lid),jornada:S.jornadas.find(j=>j.id===jId),grupos:[...new Set(S.partidos.filter(p=>p.jornadaId===jId).map(m=>m.grupo))].sort((a,b)=>a-b),lid,jId};}
@@ -15,9 +16,9 @@ export function printAnotaciones(){const d=getImpData();if(!d)return;const{liga,
           <div style="display:flex;align-items:center;gap:6mm">
             ${(()=>{const pats=S.patrocinadores.filter(p=>p.logoUrl&&(p.liga===lid));return pats.slice(0,3).map(p=>'<img src="'+p.logoUrl+'" style="height:10mm;max-width:28mm;object-fit:contain;opacity:.85">').join('');})()}
           </div><div class="hm">LIGA: <b>${esc(liga.nombre.toUpperCase())}</b><br>JORNADA <b>${jornada.num}</b> · <b>${jornada.fecha||''}</b><br>CANCHA: <b>${gms[0].cancha}</b> · <b>${gms[0].turno}</b></div></div><div class="gp"><div class="gn">GRUPO ${g}</div></div><div class="sets">${gms.map(m=>`<div class="sc"><div class="sh">SET ${m.set}</div><div class="st"><div class="sta"><div class="p1">${pFN(m.a1)}</div><div class="p2">${pFN(m.a2)}</div></div><div class="ss"><span class="bl"></span><span class="da">—</span><span class="bl"></span></div><div class="star"><div class="p1">${pFN(m.b1)}</div><div class="p2">${pFN(m.b2)}</div></div></div></div>`).join('')}</div><div class="tot"><div class="th">TOTAL · DIFERENCIAL</div><div class="tg">${pids.map(pid=>`<div class="tc"><div class="tn">${pFN(pid)}</div><div class="tl">G.G − G.P =</div><span class="tb"></span></div>`).join('')}</div></div><div class="ft" style="font-size:6pt">Urban Padel Life · ${esc(liga.nombre)}</div></div>`;});html+='</body></html>';openPrint(html);}
-function invertImageData(img){const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;const cx=c.getContext('2d');cx.drawImage(img,0,0);const id=cx.getImageData(0,0,c.width,c.height);const d=id.data;for(let i=0;i<d.length;i+=4){d[i]=255-d[i];d[i+1]=255-d[i+1];d[i+2]=255-d[i+2];}cx.putImageData(id,0,0);return c;}
-function loadImg(src){return new Promise((res,rej)=>{const img=new Image();img.crossOrigin='anonymous';img.onload=()=>res(img);img.onerror=rej;img.src=src;});}
-function fitFont(ctx,text,maxWidth,baseSize,family){let size=baseSize;ctx.font=`500 ${size}px ${family}`;while(size>10&&ctx.measureText(text).width>maxWidth){size-=1;ctx.font=`500 ${size}px ${family}`;}return size;}
+export function invertImageData(img){const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;const cx=c.getContext('2d');cx.drawImage(img,0,0);const id=cx.getImageData(0,0,c.width,c.height);const d=id.data;for(let i=0;i<d.length;i+=4){d[i]=255-d[i];d[i+1]=255-d[i+1];d[i+2]=255-d[i+2];}cx.putImageData(id,0,0);return c;}
+export function loadImg(src){return new Promise((res,rej)=>{const img=new Image();img.crossOrigin='anonymous';img.onload=()=>res(img);img.onerror=rej;img.src=src;});}
+export function fitFont(ctx,text,maxWidth,baseSize,family){let size=baseSize;ctx.font=`500 ${size}px ${family}`;while(size>10&&ctx.measureText(text).width>maxWidth){size-=1;ctx.font=`500 ${size}px ${family}`;}return size;}
 
 // Imagen PNG estilo "grid" (HORA x cancha, con grupo+jugadores por celda) para
 // compartir por WhatsApp — formato que un coach compartió y a los jugadores
@@ -50,7 +51,6 @@ export async function exportGruposWhatsApp(){
     return{turno,cols};
   });
 
-  const ICON_URL=new URL('img/favicon.png',location.href).href;
   let logo,icon;
   try{[logo,icon]=await Promise.all([loadImg(LOGO_URL),loadImg(ICON_URL)]);}
   catch(e){win.close();toast('No se pudieron cargar los logos',1);return;}

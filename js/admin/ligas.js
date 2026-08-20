@@ -41,6 +41,7 @@ export function renderLigasAdmin(){
         '<div style="font-size:.68rem;color:var(--muted2);margin-top:.15rem">'+(l.cat||'')+' &middot; '+(l.dia||'')+' &middot; '+jornadas.length+'/'+(l.nj||6)+' jornadas &middot; '+players.length+' jugadores</div></div>'+
         '<span class="bdg b-ok">'+(l.status||'activa').toUpperCase()+'</span>'+
         '<button class="btn bp bsm" onclick="entrarLiga(&quot;'+l.id+'&quot;)">Entrar &rarr;</button>'+
+        '<button class="btn bs bxs" onclick="openCierreLiga(&quot;'+l.id+'&quot;)">Terminar Liga</button>'+
         '<button class="btn bs bxs" onclick="cerrarLiga(&quot;'+l.id+'&quot;)" style="border-color:var(--accent);color:var(--accent)">Cerrar</button>'+
         '<button class="btn bd bxs" onclick="delLiga(&quot;'+l.id+'&quot;)">X</button>'+
       '</div>'+
@@ -60,6 +61,7 @@ export function renderLigasAdmin(){
       '</div>'+
       '<span class="bdg b-eq">FINALIZADA</span>'+
       '<button class="btn bs bxs" onclick="entrarLiga(&quot;'+l.id+'&quot;)">Ver historial</button>'+
+      '<button class="btn bs bxs" onclick="openCierreLiga(&quot;'+l.id+'&quot;)">Materiales</button>'+
       '<button class="btn bd bxs" onclick="delLiga(&quot;'+l.id+'&quot;)">X</button>'+
     '</div>';
   }
