@@ -1,9 +1,7 @@
 import {S, esc, calcGlobal, toast} from './state.js';
 import {openM, closeM} from './modal.js';
 import {UG, UB, LOGO_URL, ICON_URL, slug, loadImg, invertImageData, fitFont} from './imprimir.js';
-import {exportGruposWhatsApp} from './imprimir.js';
-import {goToImprimir} from './jornada-schedule.js';
-import {cerrarLiga, entrarLiga} from './ligas.js';
+import {cerrarLiga} from './ligas.js';
 
 // ═══ TERMINAR LIGA — imágenes de cierre para WhatsApp ═══
 // Reusa los helpers de imprimir.js (mismo estilo visual que "Exportar Grupos
@@ -223,29 +221,63 @@ export async function exportTablaFinalWhatsapp(lid){
   showResult(win,canvas,`Tabla_Final_${slug(liga.nombre)}.png`);
 }
 
-// La jornada con el número más alto no siempre es la última "real": Promociones
-// podía crear una jornada siguiente vacía incluso al aplicar la promoción de la
-// última jornada configurada de la liga (ver el fix en applyAndCreateJornada).
-// Para "últimas canchas" nos interesa la última jornada que de verdad tiene
-// partidos generados, no la última creada.
-function lastPlayedJornada(lid){
-  const todas=S.jornadas.filter(j=>j.liga===lid);
-  const conPartidos=todas.filter(j=>S.partidos.some(p=>p.jornadaId===j.id));
-  const pool=conPartidos.length?conPartidos:todas;
-  return pool.sort((a,b)=>b.num-a.num)[0]||null;
-}
+// ═══ ÚLTIMO ACOMODO DE GRUPOS — cómo quedaron los grupos tras la última
+// promoción. Ya no hay una jornada futura que jugar, así que a diferencia del
+// export de horarios normal esto NO lleva horarios, cancha ni fecha/jornada —
+// sólo los grupos en orden, con sus 4 jugadores cada uno.
+export async function exportUltimoAcomodo(lid){
+  const liga=S.ligas.find(l=>l.id===lid);if(!liga){toast('Liga no encontrada',1);return;}
+  const ps=S.players.filter(p=>p.liga===lid);
+  if(!ps.length){toast('Sin jugadores en esta liga',1);return;}
+  const grupos=[...new Set(ps.map(p=>p.grupo))].sort((a,b)=>a-b);
+  const win=openPreviewWindow();if(!win)return;
+  let logo,icon;
+  try{({logo,icon}=await loadBrandImgs());}catch(e){win.close();toast('No se pudieron cargar los logos',1);return;}
 
-// ═══ ÚLTIMAS CANCHAS — reusa el export de horarios de la última jornada ═══
-export function irAUltimasCanchas(lid){
-  const last=lastPlayedJornada(lid);
-  if(!last){toast('Esta liga no tiene jornadas',1);return;}
-  closeM('m-cierre');
-  // entrarLiga primero: si se llega aquí desde la lista de Ligas (sin haber
-  // "entrado" antes), goToImprimir por sí solo deja la barra de pestañas del
-  // admin oculta porque sólo entrarLiga la muestra.
-  entrarLiga(lid);
-  goToImprimir(lid,last.id);
-  setTimeout(()=>exportGruposWhatsApp(),300);
+  const scale=2;
+  const cols=Math.min(4,grupos.length)||1;
+  const rows=Math.ceil(grupos.length/cols);
+  const cardW=280,cardH=190,gap=20,padX=50;
+  const W=padX*2+cols*cardW+(cols-1)*gap;
+  const headH=100,gridTop=headH+55,footH=44;
+  const H=gridTop+rows*cardH+(rows-1)*gap+footH;
+
+  const canvas=document.createElement('canvas');
+  canvas.width=W*scale;canvas.height=H*scale;
+  const ctx=canvas.getContext('2d');
+  ctx.scale(scale,scale);
+  ctx.fillStyle=UB;ctx.fillRect(0,0,W,H);
+
+  drawHeader(ctx,W,headH,logo,icon,'Ú L T I M O   A C O M O D O   D E   G R U P O S',null);
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#fff';ctx.font="26px 'Bebas Neue', sans-serif";
+  ctx.fillText(esc(liga.nombre).toUpperCase(),W/2,headH+28);
+
+  grupos.forEach((g,i)=>{
+    const col=i%cols,row=Math.floor(i/cols);
+    const x=padX+col*(cardW+gap);
+    const y=gridTop+row*(cardH+gap);
+    ctx.fillStyle='#141414';roundRect(ctx,x,y,cardW,cardH,10);ctx.fill();
+    ctx.strokeStyle='#232323';ctx.lineWidth=1;roundRect(ctx,x,y,cardW,cardH,10);ctx.stroke();
+
+    ctx.textAlign='left';ctx.textBaseline='alphabetic';
+    ctx.fillStyle=UG;ctx.font="28px 'Bebas Neue', sans-serif";
+    ctx.fillText('GRUPO '+g,x+18,y+38);
+
+    const members=ps.filter(p=>p.grupo===g).sort((a,b)=>(a.orden||0)-(b.orden||0));
+    ctx.fillStyle='#f2f2f2';
+    members.forEach((p,mi)=>{
+      const nameSize=fitFont(ctx,p.nombre,cardW-36,16,"'Outfit', Arial, sans-serif");
+      ctx.font=`600 ${nameSize}px 'Outfit', Arial, sans-serif`;
+      ctx.fillText(p.nombre,x+18,y+66+mi*30);
+    });
+  });
+
+  ctx.textAlign='center';
+  ctx.fillStyle='#666';ctx.font="11px 'Outfit', Arial, sans-serif";
+  ctx.fillText('Urban Padel Life · '+esc(liga.nombre),W/2,H-footH/2+4);
+
+  showResult(win,canvas,`Ultimo_Acomodo_${slug(liga.nombre)}.png`);
 }
 
 // ═══ MODAL "TERMINAR LIGA" ═══
@@ -253,7 +285,6 @@ export function openCierreLiga(lid){
   const liga=S.ligas.find(l=>l.id===lid);
   if(!liga){toast('Liga no encontrada',1);return;}
   const st=calcGlobal(lid).slice(0,5);
-  const lastJ=lastPlayedJornada(lid);
   const archivada=liga.status==='archivada';
 
   const preview=st.length
@@ -278,9 +309,9 @@ export function openCierreLiga(lid){
     '<div class="cl" style="margin-top:1.1rem">TABLA FINAL COMPLETA</div>'+
     '<div class="brow"><button class="btn bp bsm" onclick="exportTablaFinalWhatsapp(&quot;'+lid+'&quot;)">Descargar imagen tabla</button></div>'+
 
-    '<div class="cl" style="margin-top:1.1rem">ÚLTIMAS CANCHAS Y HORARIOS</div>'+
-    '<div style="font-size:.74rem;color:var(--muted2);margin-bottom:.5rem">'+(lastJ?'Jornada '+lastJ.num+(lastJ.fecha?' · '+lastJ.fecha:'')+' — te llevará a la pestaña Imprimir para generarla':'Esta liga no tiene jornadas.')+'</div>'+
-    '<div class="brow"><button class="btn bp bsm" '+(lastJ?'':'disabled')+' onclick="irAUltimasCanchas(&quot;'+lid+'&quot;)">Descargar imagen de canchas</button></div>'+
+    '<div class="cl" style="margin-top:1.1rem">ÚLTIMO ACOMODO DE GRUPOS</div>'+
+    '<div style="font-size:.74rem;color:var(--muted2);margin-bottom:.5rem">Cómo quedaron los grupos después de la última promoción — sin horarios, cancha ni fecha, sólo los grupos en orden.</div>'+
+    '<div class="brow"><button class="btn bp bsm" onclick="exportUltimoAcomodo(&quot;'+lid+'&quot;)">Descargar imagen de grupos</button></div>'+
 
     '<hr style="border:none;border-top:1px solid var(--border);margin:1.2rem 0">'+
     (archivada
