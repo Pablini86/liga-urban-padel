@@ -15,14 +15,17 @@ export function populateSels(){
 export function updateJN(){
   const lid=getActiveLiga();if(!lid)return;
   const jnEl=document.getElementById('jn');if(!jnEl)return;
+  const liga=S.ligas.find(l=>l.id===lid);
   const js=S.jornadas.filter(j=>j.liga===lid).sort((a,b)=>a.num-b.num);
   const nextNum=(js.length?Math.max(...js.map(j=>j.num)):0)+1;
   const cur=jnEl.tagName==='SELECT'?jnEl.value:parseInt(jnEl.value);
   if(jnEl.tagName==='SELECT'){
-    // Ofrece siempre la siguiente jornada aunque todavía no exista en Firestore —
-    // se crea sola al guardar horarios (ver saveHorarios en jornada-schedule.js).
+    // Ofrece la siguiente jornada aunque todavía no exista en Firestore —
+    // se crea sola al guardar horarios (ver saveHorarios en jornada-schedule.js)
+    // — pero sólo si todavía queda alguna pendiente según lo configurado al
+    // crear la liga (liga.nj). Pasado ese total no hay "próxima" que ofrecer.
     const nums=js.map(j=>j.num);
-    if(!nums.includes(nextNum))nums.push(nextNum);
+    if(!nums.includes(nextNum)&&nextNum<=(liga?.nj||6))nums.push(nextNum);
     jnEl.innerHTML='<option value="">— selecciona —</option>'+
       nums.map(n=>{
         const j=js.find(x=>x.num===n);
