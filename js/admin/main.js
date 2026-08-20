@@ -9,7 +9,7 @@ import {renderCaptura, capturaGoTo, toggleModo, updateDirect, updateScore, toggl
 import {renderPromoP, applyAndCreateJornada, editGroupPos, onGrupoSelectChange, saveGroupEdit} from './promociones.js';
 import {renderImpPrev, printAnotaciones, printHorarios, printTabla, exportGruposWhatsApp} from './imprimir.js';
 import {renderPatrocinadores, openAddPatrocinador, handlePatDrop, previewPat, savePatrocinador, delPatrocinador} from './patrocinadores.js';
-import {openCierreLiga, exportTop5Whatsapp, exportBannerCampeones, exportTablaFinalWhatsapp, exportUltimoAcomodo, archivarDesdeCierre} from './cierre.js';
+import {openCierreLiga, exportTop5Whatsapp, exportBannerCampeones, printTablaFinal, exportUltimoAcomodo, archivarDesdeCierre} from './cierre.js';
 
 // ═══ LOGIN ═══
 function doLogin(){
@@ -92,5 +92,5 @@ Object.assign(window, {
   renderPromoP, applyAndCreateJornada, editGroupPos, onGrupoSelectChange, saveGroupEdit,
   renderImpPrev, printAnotaciones, printHorarios, printTabla, exportGruposWhatsApp,
   openAddPatrocinador, handlePatDrop, previewPat, savePatrocinador, delPatrocinador,
-  openCierreLiga, exportTop5Whatsapp, exportBannerCampeones, exportTablaFinalWhatsapp, exportUltimoAcomodo, archivarDesdeCierre,
+  openCierreLiga, exportTop5Whatsapp, exportBannerCampeones, printTablaFinal, exportUltimoAcomodo, archivarDesdeCierre,
 });

@@ -1,6 +1,6 @@
 import {S, esc, calcGlobal, toast} from './state.js';
 import {openM, closeM} from './modal.js';
-import {UG, UB, LOGO_URL, ICON_URL, slug, loadImg, invertImageData, fitFont} from './imprimir.js';
+import {UG, UB, LOGO_URL, ICON_URL, slug, loadImg, invertImageData, fitFont, printTabla} from './imprimir.js';
 import {cerrarLiga} from './ligas.js';
 
 // ═══ TERMINAR LIGA — imágenes de cierre para WhatsApp ═══
@@ -175,50 +175,16 @@ export async function exportBannerCampeones(lid){
   showResult(win,canvas,`Banner_Campeon_${slug(liga.nombre)}.png`);
 }
 
-// ═══ TABLA FINAL COMPLETA — imagen vertical para WhatsApp ═══
-export async function exportTablaFinalWhatsapp(lid){
-  const liga=S.ligas.find(l=>l.id===lid);if(!liga){toast('Liga no encontrada',1);return;}
-  const st=calcGlobal(lid);
-  if(!st.length){toast('Sin jugadores en esta liga',1);return;}
-  const win=openPreviewWindow();if(!win)return;
-  let logo,icon;
-  try{({logo,icon}=await loadBrandImgs());}catch(e){win.close();toast('No se pudieron cargar los logos',1);return;}
-
-  const scale=2,W=1000;
-  const headH=140,rowH=54,footH=50;
-  const H=headH+st.length*rowH+footH;
-  const canvas=document.createElement('canvas');
-  canvas.width=W*scale;canvas.height=H*scale;
-  const ctx=canvas.getContext('2d');
-  ctx.scale(scale,scale);
-  ctx.fillStyle=UB;ctx.fillRect(0,0,W,H);
-
-  drawHeader(ctx,W,headH-30,logo,icon,'T A B L A   F I N A L',null);
-  ctx.textAlign='center';
-  ctx.fillStyle='#fff';ctx.font="30px 'Bebas Neue', sans-serif";
-  ctx.fillText(esc(liga.nombre).toUpperCase(),W/2,headH-2);
-  ctx.strokeStyle=UG;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(60,headH+10);ctx.lineTo(W-60,headH+10);ctx.stroke();
-
-  let y=headH+10;
-  st.forEach((s,i)=>{
-    const rowY=y;
-    if(i===0){ctx.fillStyle='rgba(184,212,0,.12)';ctx.fillRect(60,rowY,W-120,rowH);}
-    else if(i%2===1){ctx.fillStyle='#0e0e0e';ctx.fillRect(60,rowY,W-120,rowH);}
-    ctx.textAlign='left';ctx.textBaseline='middle';
-    ctx.fillStyle=i===0?UG:'#888';ctx.font="26px 'Bebas Neue', sans-serif";
-    ctx.fillText(String(i+1),80,rowY+rowH/2);
-    ctx.fillStyle='#f2f2f2';ctx.font=(i===0?'700 ':'600 ')+"18px 'Outfit', Arial, sans-serif";
-    ctx.fillText(s.player.nombre,130,rowY+rowH/2);
-    ctx.textAlign='right';ctx.fillStyle=s.total>=0?UG:'#ff5a6e';ctx.font="600 17px 'Outfit', Arial, sans-serif";
-    ctx.fillText((s.total>0?'+':'')+s.total+' PTS',W-80,rowY+rowH/2);
-    y+=rowH;
-  });
-
-  ctx.textAlign='center';ctx.textBaseline='alphabetic';
-  ctx.fillStyle='#666';ctx.font="11px 'Outfit', Arial, sans-serif";
-  ctx.fillText('Urban Padel Life · '+new Date().toLocaleDateString('es-MX'),W/2,H-footH/2+4);
-
-  showResult(win,canvas,`Tabla_Final_${slug(liga.nombre)}.png`);
+// ═══ TABLA FINAL COMPLETA — PDF/impresión ═══
+// Como imagen para WhatsApp la tabla salía muy larga con muchos jugadores/
+// grupos y se veía mal. Mejor reusar printTabla (imprimir.js) — el mismo
+// PDF paginado que ya usa el botón "Imprimir / PDF" de la pestaña Tabla,
+// con el desglose de cada jornada.
+export function printTablaFinal(lid){
+  const prevActive=S.activeLiga;
+  S.activeLiga=lid;
+  printTabla();
+  S.activeLiga=prevActive;
 }
 
 // ═══ ÚLTIMO ACOMODO DE GRUPOS — cómo quedaron los grupos tras la última
@@ -307,7 +273,8 @@ export function openCierreLiga(lid){
     '<div class="brow"><button class="btn bp bsm" onclick="exportBannerCampeones(&quot;'+lid+'&quot;)">Descargar banner</button></div>'+
 
     '<div class="cl" style="margin-top:1.1rem">TABLA FINAL COMPLETA</div>'+
-    '<div class="brow"><button class="btn bp bsm" onclick="exportTablaFinalWhatsapp(&quot;'+lid+'&quot;)">Descargar imagen tabla</button></div>'+
+    '<div style="font-size:.74rem;color:var(--muted2);margin-bottom:.5rem">PDF listo para imprimir o guardar, con el desglose de cada jornada.</div>'+
+    '<div class="brow"><button class="btn bp bsm" onclick="printTablaFinal(&quot;'+lid+'&quot;)">Descargar tabla en PDF</button></div>'+
 
     '<div class="cl" style="margin-top:1.1rem">ÚLTIMO ACOMODO DE GRUPOS</div>'+
     '<div style="font-size:.74rem;color:var(--muted2);margin-bottom:.5rem">Cómo quedaron los grupos después de la última promoción — sin horarios, cancha ni fecha, sólo los grupos en orden.</div>'+
