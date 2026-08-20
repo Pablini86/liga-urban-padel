@@ -422,3 +422,26 @@ function enableHorarioEdit(){
   document.getElementById('sched-grid-container').style.opacity='';
   toast('Puedes editar horarios — guarda cuando termines');
 }
+
+// Borra la jornada seleccionada en el selector "Jornada" de esta pestaña
+// junto con sus partidos. Pensado para limpiar jornadas creadas de más por
+// error (p.ej. Promociones creaba automáticamente una jornada siguiente aun
+// cuando la seleccionada ya era la última configurada de la liga — ver
+// applyAndCreateJornada en promociones.js).
+export async function delJornadaActual(){
+  const lid=getActiveLiga();
+  const num=parseInt(document.getElementById('jn')?.value);
+  if(!lid||!num){toast('Selecciona una jornada',1);return;}
+  const jornada=S.jornadas.find(j=>j.liga===lid&&j.num===num);
+  if(!jornada){toast('Jornada no encontrada',1);return;}
+  const partidos=S.partidos.filter(p=>p.jornadaId===jornada.id);
+  const jugados=partidos.filter(p=>p.finalizado);
+  const msg=jugados.length
+    ? '⚠ La Jornada '+num+' tiene '+jugados.length+' set(s) con resultado ya capturado. Si la borras, esa información se pierde para siempre.\n\n¿Eliminar de todos modos?'
+    : '¿Eliminar la Jornada '+num+(jornada.fecha?' ('+jornada.fecha+')':'')+(partidos.length?' y sus '+partidos.length+' partido(s)':', vacía')+'?\n\nNo se puede deshacer.';
+  if(!confirm(msg))return;
+  const ops=[{op:'del',col:'jornadas',id:jornada.id}];
+  partidos.forEach(p=>ops.push({op:'del',col:'partidos',id:p.id}));
+  await fsBatch(ops);
+  toast('✓ Jornada '+num+' eliminada');
+}

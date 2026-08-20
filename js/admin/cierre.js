@@ -223,10 +223,21 @@ export async function exportTablaFinalWhatsapp(lid){
   showResult(win,canvas,`Tabla_Final_${slug(liga.nombre)}.png`);
 }
 
+// La jornada con el número más alto no siempre es la última "real": Promociones
+// podía crear una jornada siguiente vacía incluso al aplicar la promoción de la
+// última jornada configurada de la liga (ver el fix en applyAndCreateJornada).
+// Para "últimas canchas" nos interesa la última jornada que de verdad tiene
+// partidos generados, no la última creada.
+function lastPlayedJornada(lid){
+  const todas=S.jornadas.filter(j=>j.liga===lid);
+  const conPartidos=todas.filter(j=>S.partidos.some(p=>p.jornadaId===j.id));
+  const pool=conPartidos.length?conPartidos:todas;
+  return pool.sort((a,b)=>b.num-a.num)[0]||null;
+}
+
 // ═══ ÚLTIMAS CANCHAS — reusa el export de horarios de la última jornada ═══
 export function irAUltimasCanchas(lid){
-  const js=S.jornadas.filter(j=>j.liga===lid).sort((a,b)=>b.num-a.num);
-  const last=js[0];
+  const last=lastPlayedJornada(lid);
   if(!last){toast('Esta liga no tiene jornadas',1);return;}
   closeM('m-cierre');
   // entrarLiga primero: si se llega aquí desde la lista de Ligas (sin haber
@@ -242,8 +253,7 @@ export function openCierreLiga(lid){
   const liga=S.ligas.find(l=>l.id===lid);
   if(!liga){toast('Liga no encontrada',1);return;}
   const st=calcGlobal(lid).slice(0,5);
-  const js=S.jornadas.filter(j=>j.liga===lid).sort((a,b)=>b.num-a.num);
-  const lastJ=js[0];
+  const lastJ=lastPlayedJornada(lid);
   const archivada=liga.status==='archivada';
 
   const preview=st.length

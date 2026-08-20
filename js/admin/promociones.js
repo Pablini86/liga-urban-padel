@@ -26,6 +26,10 @@ export function renderPromoP(){
   const n=parseInt(document.getElementById('prn')?.value)||1;
   const jornada4promo=S.jornadas.find(j=>j.id===jId);
   const jnum4promo=jornada4promo?.num||1;
+  const liga4promo=S.ligas.find(l=>l.id===lid);
+  // La liga guarda cuántas jornadas tiene (nj, definido al crearla) — si la
+  // jornada seleccionada ya es la última, no hay que crear una siguiente.
+  const isLastJornada=jnum4promo>=(liga4promo?.nj||6);
   // If jornada has partidos use snapshot, else use current grupo (new jornada)
   const gkey=jornadaHasPartidos?('grupo_j'+jnum4promo):null;
   const grupos=[...new Set(S.players.filter(p=>p.liga===lid).map(p=>(gkey?p[gkey]:null)||p.grupo))].sort((a,b)=>a-b);
@@ -62,35 +66,59 @@ export function renderPromoP(){
   </div>`;
 
   // Show next jornada info
+  const step2Title=document.getElementById('promo-step2-title');
+  const step2Desc=document.getElementById('promo-step2-desc');
+  const applyBtn=document.getElementById('promo-apply-btn');
   if(actEl){
     if(!existing){
       actEl.style.display='block';
       const ni=document.getElementById('promo-next-info');
-      if(ni) ni.textContent='Se creará la Jornada '+nextNum;
+      if(isLastJornada){
+        if(step2Title) step2Title.textContent='PASO 2 — CONFIRMAR (ÚLTIMA JORNADA)';
+        if(step2Desc) step2Desc.textContent='Jornada '+jnum4promo+' de '+(liga4promo?.nj||6)+' — es la última configurada para esta liga. No se creará una jornada nueva.';
+        if(applyBtn) applyBtn.textContent='Aplicar Promoción';
+        if(ni) ni.textContent='Cuando termines, usa "Terminar Liga" en la pestaña Ligas para generar los materiales de cierre.';
+      } else {
+        if(step2Title) step2Title.textContent='PASO 2 — CONFIRMAR Y CREAR JORNADA';
+        if(step2Desc) step2Desc.textContent='Revisa los grupos arriba. Cuando estés listo, crea la siguiente jornada con grupos reorganizados.';
+        if(applyBtn) applyBtn.textContent='Aplicar y Crear Jornada';
+        if(ni) ni.textContent='Se creará la Jornada '+nextNum;
+      }
     } else {
       actEl.style.display='none';
       const created=document.getElementById('promo-created');
       if(created){
-        const j=S.jornadas.find(x=>x.liga===lid&&x.num===nextNum);
-        if(j){
-          const gps=S.players.filter(p=>p.liga===lid);
-          const newGrupos=[...new Set(gps.map(p=>p.grupo))].sort((a,b)=>a-b);
-          const gruposHtml2=newGrupos.map(g=>{
-            const members=gps.filter(p=>p.grupo===g).sort((a,b)=>(a.orden||0)-(b.orden||0));
-            return '<div style="background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:.5rem .7rem;min-width:140px">'+
-              '<div style="font-family:Bebas Neue,sans-serif;font-size:.85rem;color:var(--accent);margin-bottom:.3rem">G'+g+'</div>'+
-              members.map(p=>'<div style="font-size:.72rem">'+pShort(p.nombre)+'</div>').join('')+
-            '</div>';
-          }).join('');
+        if(isLastJornada){
           created.style.display='block';
           created.innerHTML=
             '<div style="background:rgba(0,229,158,.05);border:1px solid rgba(0,229,158,.2);border-radius:10px;padding:1rem 1.2rem;margin-top:.75rem">'+
-            '<div style="font-weight:700;color:var(--accent3);margin-bottom:.6rem">Jornada '+nextNum+' creada</div>'+
-            '<div style="font-size:.72rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.6rem">Grupos J'+nextNum+'</div>'+
-            '<div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem">'+gruposHtml2+'</div>'+
+            '<div style="font-weight:700;color:var(--accent3);margin-bottom:.6rem">✓ Promoción aplicada — liga lista para terminar</div>'+
+            '<p style="font-size:.78rem;color:var(--muted2);margin-bottom:.75rem">Esta era la última jornada, no se creó una jornada nueva.</p>'+
             '<div style="display:flex;gap:.65rem;flex-wrap:wrap">'+
-            '<button class="btn bp bsm" data-lid="'+lid+'" data-num="'+nextNum+'" onclick="goToJornada(this.dataset.lid,parseInt(this.dataset.num))">Asignar Horarios J'+nextNum+'</button>'+
+            '<button class="btn bp bsm" data-lid="'+lid+'" onclick="openCierreLiga(this.dataset.lid)">Terminar Liga</button>'+
             '</div></div>';
+        } else {
+          const j=S.jornadas.find(x=>x.liga===lid&&x.num===nextNum);
+          if(j){
+            const gps=S.players.filter(p=>p.liga===lid);
+            const newGrupos=[...new Set(gps.map(p=>p.grupo))].sort((a,b)=>a-b);
+            const gruposHtml2=newGrupos.map(g=>{
+              const members=gps.filter(p=>p.grupo===g).sort((a,b)=>(a.orden||0)-(b.orden||0));
+              return '<div style="background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:.5rem .7rem;min-width:140px">'+
+                '<div style="font-family:Bebas Neue,sans-serif;font-size:.85rem;color:var(--accent);margin-bottom:.3rem">G'+g+'</div>'+
+                members.map(p=>'<div style="font-size:.72rem">'+pShort(p.nombre)+'</div>').join('')+
+              '</div>';
+            }).join('');
+            created.style.display='block';
+            created.innerHTML=
+              '<div style="background:rgba(0,229,158,.05);border:1px solid rgba(0,229,158,.2);border-radius:10px;padding:1rem 1.2rem;margin-top:.75rem">'+
+              '<div style="font-weight:700;color:var(--accent3);margin-bottom:.6rem">Jornada '+nextNum+' creada</div>'+
+              '<div style="font-size:.72rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.6rem">Grupos J'+nextNum+'</div>'+
+              '<div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem">'+gruposHtml2+'</div>'+
+              '<div style="display:flex;gap:.65rem;flex-wrap:wrap">'+
+              '<button class="btn bp bsm" data-lid="'+lid+'" data-num="'+nextNum+'" onclick="goToJornada(this.dataset.lid,parseInt(this.dataset.num))">Asignar Horarios J'+nextNum+'</button>'+
+              '</div></div>';
+          }
         }
       }
     }
@@ -111,6 +139,16 @@ export async function applyAndCreateJornada(){
     toast('Esta jornada ya tiene promoción aplicada',1);return;
   }
 
+  const liga=S.ligas.find(l=>l.id===lid);
+  const jornada=S.jornadas.find(j=>j.id===jId);
+  const currentJNum=jornada?.num||1;
+  // No crear una jornada siguiente si la seleccionada ya es la última
+  // configurada para la liga (liga.nj) — antes se creaba siempre, lo que
+  // dejaba jornadas vacías de más (p.ej. J7/J8) al aplicar la promoción de
+  // la última jornada real.
+  const isLastJornada=currentJNum>=(liga?.nj||6);
+  const nextNum=currentJNum+1;
+
   const grupos=[...new Set(S.players.filter(p=>p.liga===lid).map(p=>p.grupo))].sort((a,b)=>a-b);
   const moves=[];
   grupos.forEach(g=>{
@@ -119,90 +157,62 @@ export async function applyAndCreateJornada(){
     st.slice(-n).forEach(s=>{if(g<grupos.length)moves.push({pid:s.player.id,from:g,to:g+1,dir:'down'});});
   });
 
-  if(!confirm('¿Aplicar promociones y crear la siguiente jornada?'))return;
+  if(!confirm(isLastJornada?'¿Aplicar la promoción? Jornada '+currentJNum+' es la última de la liga — no se creará una jornada nueva.':'¿Aplicar promociones y crear la siguiente jornada?'))return;
 
   const ops=[];
 
   // 1. Apply group changes to players - save snapshots
   const newGroups={};
   moves.forEach(mv=>{newGroups[mv.pid]=mv.to;});
-  const jornadaRef2=S.jornadas.find(j=>j.id===jId);
-  const currentJNum2=jornadaRef2?.num||1;
-  const nextNum2a=Math.max(...S.jornadas.filter(j=>j.liga===lid).map(j=>j.num),0)+1;
   S.players.filter(p=>p.liga===lid).forEach(p=>{
     const newG=newGroups[p.id]||p.grupo;
-    const updated={...p,
-      ['grupo_j'+currentJNum2]:p.grupo,
-      ['grupo_j'+nextNum2a]:newG,
-      grupo:newG
-    };
+    const updated={...p, ['grupo_j'+currentJNum]:p.grupo, grupo:newG};
+    if(!isLastJornada) updated['grupo_j'+nextNum]=newG;
     ops.push({op:'set',col:'players',id:p.id,data:updated});
   });
 
-  // 2. Reorder within new groups
-  const byNewGroup={};
-  S.players.filter(p=>p.liga===lid).forEach(p=>{
-    const g=newGroups[p.id]||p.grupo;
-    if(!byNewGroup[g])byNewGroup[g]=[];
-    byNewGroup[g].push({...p,grupo:g});
-  });
-
-  // 3. Save promotion record
+  // 2. Save promotion record
   const promo={id:uid(),liga:lid,jornadaId:jId,n,moves,fecha:new Date().toISOString().slice(0,10),applied:true};
   ops.push({op:'set',col:'promociones',id:promo.id,data:promo});
 
-  // 4. Create new jornada (empty, no matches yet)
-  const nextNum=Math.max(...S.jornadas.filter(j=>j.liga===lid).map(j=>j.num),0)+1;
-  const jornada=S.jornadas.find(j=>j.id===jId);
-  const newJId=uid();
-  const newJ={id:newJId,liga:lid,num:nextNum,fecha:'',canchas:jornada?.canchas||6,turnos:jornada?.turnos||['18:00','19:15','20:30','21:45']};
-  ops.push({op:'set',col:'jornadas',id:newJId,data:newJ});
+  // 3. Create the next jornada — sólo si todavía faltan jornadas por jugar
+  let newJId=null;
+  if(!isLastJornada){
+    newJId=uid();
+    const newJ={id:newJId,liga:lid,num:nextNum,fecha:'',canchas:jornada?.canchas||6,turnos:jornada?.turnos||['18:00','19:15','20:30','21:45']};
+    ops.push({op:'set',col:'jornadas',id:newJId,data:newJ});
+  }
 
   await fsBatch(ops);
-  toast('✓ Promociones aplicadas · Jornada '+nextNum+' creada');
-
-  // Show groups preview
-  const created2=document.getElementById('promo-created');
-  if(created2){
-    const gps=S.players.filter(p=>p.liga===lid);
-    const newGrupos=[...new Set(gps.map(p=>p.grupo))].sort((a,b)=>a-b);
-    const gHtml=newGrupos.map(g=>{
-      const members=gps.filter(p=>p.grupo===g).sort((a,b)=>(a.orden||0)-(b.orden||0));
-      return '<div style="background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:.5rem .7rem;min-width:140px">'+
-        '<div style="font-family:Bebas Neue,sans-serif;font-size:.85rem;color:var(--accent);margin-bottom:.3rem">G'+g+'</div>'+
-        members.map(p=>'<div style="font-size:.72rem">'+pShort(p.nombre)+'</div>').join('')+
-      '</div>';
-    }).join('');
-    created2.style.display='block';
-    created2.innerHTML=
-      '<div style="background:rgba(0,229,158,.05);border:1px solid rgba(0,229,158,.2);border-radius:10px;padding:1rem 1.2rem;margin-top:.75rem">'+
-      '<div style="font-weight:700;color:var(--accent3);margin-bottom:.6rem">Jornada '+nextNum+' creada</div>'+
-      '<div style="font-size:.72rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.6rem">Grupos J'+nextNum+'</div>'+
-      '<div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem">'+gHtml+'</div>'+
-      '<button class="btn bp bsm" data-lid="'+lid+'" data-num="'+nextNum+'" onclick="goToJornada(this.dataset.lid,parseInt(this.dataset.num))">Asignar Horarios J'+nextNum+'</button>'+
-      '</div>';
-  }
+  toast(isLastJornada?'✓ Promoción aplicada — última jornada de la liga':'✓ Promociones aplicadas · Jornada '+nextNum+' creada');
 
   // Show quick actions
   const created=document.getElementById('promo-created');
   if(created){
     created.style.display='block';
-    created.innerHTML=`<div style="background:rgba(0,229,158,.05);border:1px solid rgba(0,229,158,.2);border-radius:10px;padding:1rem 1.2rem;margin-top:.75rem">
-      <div style="font-weight:700;color:var(--accent3);margin-bottom:.6rem">✓ Jornada ${nextNum} creada — grupos actualizados</div>
-      <p style="font-size:.78rem;color:var(--muted2);margin-bottom:.75rem">${moves.filter(m=>m.dir==='up').length} jugadores subieron · ${moves.filter(m=>m.dir==='down').length} bajaron</p>
-      <div style="display:flex;gap:.65rem;flex-wrap:wrap">
-        <button class="btn bp bsm" onclick="goToJornada('${lid}',${nextNum})">Asignar Horarios J${nextNum}</button>
-        <button class="btn bs bsm" onclick="goToImprimir('${lid}','${newJId}')">Imprimir</button>
-      </div>
-    </div>`;
+    created.innerHTML=isLastJornada
+      ? `<div style="background:rgba(0,229,158,.05);border:1px solid rgba(0,229,158,.2);border-radius:10px;padding:1rem 1.2rem;margin-top:.75rem">
+        <div style="font-weight:700;color:var(--accent3);margin-bottom:.6rem">✓ Promoción aplicada — liga lista para terminar</div>
+        <p style="font-size:.78rem;color:var(--muted2);margin-bottom:.75rem">Esta era la última jornada, no se creó una jornada nueva. ${moves.filter(m=>m.dir==='up').length} jugadores subieron · ${moves.filter(m=>m.dir==='down').length} bajaron.</p>
+        <div style="display:flex;gap:.65rem;flex-wrap:wrap">
+          <button class="btn bp bsm" onclick="openCierreLiga('${lid}')">Terminar Liga</button>
+        </div>
+      </div>`
+      : `<div style="background:rgba(0,229,158,.05);border:1px solid rgba(0,229,158,.2);border-radius:10px;padding:1rem 1.2rem;margin-top:.75rem">
+        <div style="font-weight:700;color:var(--accent3);margin-bottom:.6rem">✓ Jornada ${nextNum} creada — grupos actualizados</div>
+        <p style="font-size:.78rem;color:var(--muted2);margin-bottom:.75rem">${moves.filter(m=>m.dir==='up').length} jugadores subieron · ${moves.filter(m=>m.dir==='down').length} bajaron</p>
+        <div style="display:flex;gap:.65rem;flex-wrap:wrap">
+          <button class="btn bp bsm" onclick="goToJornada('${lid}',${nextNum})">Asignar Horarios J${nextNum}</button>
+          <button class="btn bs bsm" onclick="goToImprimir('${lid}','${newJId}')">Imprimir</button>
+        </div>
+      </div>`;
   }
   document.getElementById('promo-actions').style.display='none';
   renderPromoHist(lid);
-  // Switch dropdown to show J2 and re-render promo
+  // Switch dropdown to show the new jornada (if one was created) and re-render promo
   setTimeout(()=>{
     const prjEl=document.getElementById('prj');
     if(prjEl){
-      // Find the new jornada
       const newJ=S.jornadas.find(j=>j.liga===lid&&j.num===nextNum);
       if(newJ) prjEl.value=newJ.id;
     }

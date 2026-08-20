@@ -200,6 +200,8 @@
               <span class="help-q" onclick="alert('¿Cuándo usar Restaurar grupos?\n\nSi la lista de Jugadores se desacomodó después de crear los partidos (por ejemplo al arrastrar en Reordenar grupos), esto corrige el Grupo de cada jugador para que vuelva a coincidir con los partidos ya creados.\n\nNo borra ni crea ningún partido.')">?</span>
               <button class="btn bs bsm" style="margin-left:.75rem" onclick="resyncPartidosDesdeJugadores()">⟳ Sincronizar partidos con Jugadores</button>
               <span class="help-q" onclick="alert('¿Cuándo usar Sincronizar partidos?\n\nSi cambiaste la lista de Jugadores a propósito después de crear los partidos (por ejemplo con Excel o un reemplazo), esto actualiza los partidos para que coincidan con la lista nueva.\n\nNo toca ningún grupo que ya tenga resultados capturados.')">?</span>
+              <button class="btn bd bsm" style="margin-left:.75rem" onclick="delJornadaActual()">🗑 Eliminar jornada seleccionada</button>
+              <span class="help-q" onclick="alert('¿Cuándo usar Eliminar jornada?\n\nBorra la jornada que tengas elegida arriba en \'Jornada\', junto con sus partidos. Úsalo para quitar una jornada creada de más por error (por ejemplo si Promociones generó una jornada extra al aplicar la promoción de la última jornada real).\n\nSi la jornada ya tiene resultados capturados, se pierden al borrarla — no se puede deshacer.')">?</span>
             </div>
           </details>
           <div id="j-prev" style="margin-top:.75rem"></div>
@@ -246,10 +248,10 @@
       <div id="promo-prev" style="margin-bottom:1rem"></div>
       <div id="promo-actions" style="display:none;margin-bottom:1.5rem">
         <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem">
-          <div class="cl" style="margin-bottom:.5rem">PASO 2 — CONFIRMAR Y CREAR JORNADA</div>
-          <p style="font-size:.78rem;color:var(--muted2);margin-bottom:.85rem">Revisa los grupos arriba. Cuando estés listo, crea la siguiente jornada con grupos reorganizados.</p>
+          <div class="cl" style="margin-bottom:.5rem" id="promo-step2-title">PASO 2 — CONFIRMAR Y CREAR JORNADA</div>
+          <p style="font-size:.78rem;color:var(--muted2);margin-bottom:.85rem" id="promo-step2-desc">Revisa los grupos arriba. Cuando estés listo, crea la siguiente jornada con grupos reorganizados.</p>
           <div style="display:flex;gap:.65rem;flex-wrap:wrap;align-items:center">
-            <button class="btn bp" onclick="applyAndCreateJornada()">Aplicar y Crear Jornada</button>
+            <button class="btn bp" id="promo-apply-btn" onclick="applyAndCreateJornada()">Aplicar y Crear Jornada</button>
             <div id="promo-next-info" style="font-size:.78rem;color:var(--muted2)"></div>
           </div>
         </div>
