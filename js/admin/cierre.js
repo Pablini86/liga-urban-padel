@@ -88,7 +88,7 @@ export async function exportTop5Whatsapp(lid){
   drawHeader(ctx,W,headH,logo,icon,'T O P   5   ·   T A B L A   F I N A L',null);
   ctx.textAlign='center';
   ctx.fillStyle='#fff';ctx.font="34px 'Bebas Neue', sans-serif";
-  ctx.fillText(esc(liga.nombre).toUpperCase(),W/2,headH+30);
+  ctx.fillText(liga.nombre.toUpperCase(),W/2,headH+30);
 
   // Podio: 2° izquierda, 1° centro (más alto), 3° derecha
   const podY=headH+52;
@@ -168,7 +168,7 @@ export async function exportBannerCampeones(lid){
   ctx.fillStyle='#fff';ctx.font=`${nameSize}px 'Bebas Neue', sans-serif`;
   ctx.fillText(champ.player.nombre,60,270);
   ctx.fillStyle='#aaa';ctx.font="16px 'Outfit', Arial, sans-serif";
-  ctx.fillText(esc(liga.nombre)+(second?'  ·  2° '+second.player.nombre:'')+(third?'  ·  3° '+third.player.nombre:''),60,306);
+  ctx.fillText(liga.nombre+(second?'  ·  2° '+second.player.nombre:'')+(third?'  ·  3° '+third.player.nombre:''),60,306);
   ctx.fillStyle='#666';ctx.font="12px 'Outfit', Arial, sans-serif";
   ctx.fillText('Av. de las Rosas 171 · Col. Chapalita · Guadalajara',60,336);
 
@@ -217,7 +217,7 @@ export async function exportUltimoAcomodo(lid){
   drawHeader(ctx,W,headH,logo,icon,'Ú L T I M O   A C O M O D O   D E   G R U P O S',null);
   ctx.textAlign='center';ctx.textBaseline='alphabetic';
   ctx.fillStyle='#fff';ctx.font="26px 'Bebas Neue', sans-serif";
-  ctx.fillText(esc(liga.nombre).toUpperCase(),W/2,headH+28);
+  ctx.fillText(liga.nombre.toUpperCase(),W/2,headH+28);
 
   grupos.forEach((g,i)=>{
     const col=i%cols,row=Math.floor(i/cols);
@@ -241,7 +241,7 @@ export async function exportUltimoAcomodo(lid){
 
   ctx.textAlign='center';
   ctx.fillStyle='#666';ctx.font="11px 'Outfit', Arial, sans-serif";
-  ctx.fillText('Urban Padel Life · '+esc(liga.nombre),W/2,H-footH/2+4);
+  ctx.fillText('Urban Padel Life · '+liga.nombre,W/2,H-footH/2+4);
 
   showResult(win,canvas,`Ultimo_Acomodo_${slug(liga.nombre)}.png`);
 }

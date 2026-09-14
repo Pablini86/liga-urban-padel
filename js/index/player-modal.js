@@ -7,9 +7,14 @@ export function openPlayer(pid,lid){
   const total=calcTotal(pid,lid);
   const st=calcGlobal(lid);
   const rank=st.findIndex(x=>x.player.id===pid)+1;
+  // pShort ya muestra las primeras 2 palabras del nombre — el resto (si lo
+  // hay) va en <em>. Antes se repetía la 2a palabra porque el <em> arrancaba
+  // desde la palabra 1 en vez de la 2, duplicando el apellido de cualquiera
+  // con nombre de 2+ palabras (ej. "Araceli Delgado" -> "Araceli Delgado Delgado").
+  const nameRest=p.nombre.trim().split(/ +/).slice(2).join(' ');
 
   document.getElementById('modal-content').innerHTML=`
-    <h2>${pShort(p.nombre)} <em>${esc(p.nombre.split(' ').slice(1).join(' '))}</em></h2>
+    <h2>${pShort(p.nombre)}${nameRest?' <em>'+esc(nameRest)+'</em>':''}</h2>
     <div style="display:flex;gap:.65rem;flex-wrap:wrap;margin-bottom:1.1rem">
       <span style="font-size:.75rem;color:var(--muted2)">Grupo ${p.grupo} · ${esc(p.cat||'')}</span>
       <span style="font-size:.75rem;color:var(--accent);font-weight:700">#${rank} en tabla</span>

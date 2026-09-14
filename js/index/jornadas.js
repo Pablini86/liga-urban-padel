@@ -1,4 +1,4 @@
-import {S, esc, pShort, pFirst} from './state.js';
+import {S, esc, pShort, pFirst, pById} from './state.js';
 
 // JORNADAS
 export function renderJornadas(lid){
@@ -50,7 +50,11 @@ function renderJornadaFixture(jId,lid){
   const grupos=[...new Set(ms.map(m=>m.grupo))].sort((a,b)=>a-b);
   return`<div style="padding:.5rem 0">`+grupos.map(g=>{
     const gms=ms.filter(m=>m.grupo===g);
-    const gps=S.players.filter(p=>p.liga===lid&&p.grupo===g).sort((a,b)=>a.orden-b.orden);
+    // Jugadores desde el partido ya generado (a1/a2/b1/b2), no desde p.grupo
+    // actual — si se aplicó una promoción después de crear esta jornada,
+    // p.grupo ya cambió y mostraría la formación nueva, no la que jugó.
+    const gpids=[...new Set(gms.flatMap(m=>[m.a1,m.a2,m.b1,m.b2]))];
+    const gps=gpids.map(pById).filter(Boolean).sort((a,b)=>(a.orden||0)-(b.orden||0));
     return`<div class="grupo-block">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
         <div class="grupo-title">GRUPO ${g}</div>

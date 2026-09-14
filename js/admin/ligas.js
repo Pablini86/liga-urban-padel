@@ -111,4 +111,32 @@ export async function cerrarLiga(id){
 }
 
 export async function createLiga(){const n=document.getElementById('nl-n').value.trim();if(!n){toast('Escribe nombre',1);return;}const l={id:uid(),nombre:n,cat:document.getElementById('nl-c').value,status:'activa',nj:parseInt(document.getElementById('nl-nj').value)||6,dia:document.getElementById('nl-d').value,inicio:document.getElementById('nl-i').value,fin:document.getElementById('nl-f').value};const j1={id:uid(),liga:l.id,num:1,fecha:'',canchas:6,turnos:['18:00','19:15','20:30','21:45']};await fsBatch([{op:'set',col:'ligas',id:l.id,data:l},{op:'set',col:'jornadas',id:j1.id,data:j1}]);if(!S.activeLiga)S.activeLiga=l.id;closeM('m-liga');toast('✓ Liga creada');}
-export async function delLiga(id){if(!confirm('¿Eliminar?'))return;const ops=[{op:'del',col:'ligas',id}];S.players.filter(p=>p.liga===id).forEach(p=>ops.push({op:'del',col:'players',id:p.id}));S.partidos.filter(p=>p.liga===id).forEach(p=>ops.push({op:'del',col:'partidos',id:p.id}));S.jornadas.filter(j=>j.liga===id).forEach(j=>ops.push({op:'del',col:'jornadas',id:j.id}));await fsBatch(ops);if(S.activeLiga===id)S.activeLiga=S.ligas.find(l=>l.id!==id)?.id||null;toast('Liga eliminada');}
+// Antes solo preguntaba "¿Eliminar?" sin decir qué se iba a borrar, pegado
+// junto al botón "Entrar" — fácil de tocar por error. Ahora lista cuánto se
+// pierde (jornadas, partidos, jugadores, restricciones, patrocinadores) y
+// también limpia restricciones/patrocinadores de la liga, que antes se
+// quedaban huérfanos en Firestore sin que nada los mostrara ni permitiera
+// borrarlos.
+export async function delLiga(id){
+  const liga=S.ligas.find(l=>l.id===id);
+  const nombre=liga?liga.nombre:'esta liga';
+  const nJornadas=S.jornadas.filter(j=>j.liga===id).length;
+  const nPartidos=S.partidos.filter(p=>p.liga===id).length;
+  const nPlayers=S.players.filter(p=>p.liga===id).length;
+  const restricciones=(S.restricciones||[]).filter(r=>r.liga===id);
+  const patrocinadores=(S.patrocinadores||[]).filter(p=>p.liga===id);
+  const detalle=[nJornadas+' jornada(s)',nPartidos+' partido(s)/set(s)',nPlayers+' jugador(es)']
+    .concat(restricciones.length?[restricciones.length+' restriccion(es)']:[])
+    .concat(patrocinadores.length?[patrocinadores.length+' logo(s) de patrocinador']:[])
+    .join('\n- ');
+  if(!confirm('¿Eliminar la liga "'+nombre+'"?\n\nEsto borra TODO lo de esta liga y no se puede deshacer:\n- '+detalle))return;
+  const ops=[{op:'del',col:'ligas',id}];
+  S.players.filter(p=>p.liga===id).forEach(p=>ops.push({op:'del',col:'players',id:p.id}));
+  S.partidos.filter(p=>p.liga===id).forEach(p=>ops.push({op:'del',col:'partidos',id:p.id}));
+  S.jornadas.filter(j=>j.liga===id).forEach(j=>ops.push({op:'del',col:'jornadas',id:j.id}));
+  restricciones.forEach(r=>ops.push({op:'del',col:'restricciones',id:r.id}));
+  patrocinadores.forEach(p=>ops.push({op:'del',col:'patrocinadores',id:p.id}));
+  await fsBatch(ops);
+  if(S.activeLiga===id)S.activeLiga=S.ligas.find(l=>l.id!==id)?.id||null;
+  toast('Liga eliminada');
+}

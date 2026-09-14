@@ -1,4 +1,4 @@
-const CACHE = 'urban-padel-v2';
+const CACHE = 'urban-padel-v3';
 const ASSETS = ['/img/favicon.png', '/img/logo.png', '/manifest.json'];
 
 self.addEventListener('install', e => {
@@ -27,8 +27,20 @@ self.addEventListener('fetch', e => {
      e.request.url.includes('googleapis')) {
     return e.respondWith(fetch(e.request));
   }
-  // Otros assets: cache first
+  // Otros assets: cache first, y lo que se trae de red se guarda para la
+  // próxima — antes solo servía de caché los 3 archivos precargados en
+  // install() y nunca guardaba nada más (js/css/fuentes), así que la app
+  // "instalada" no funcionaba sin internet más allá de la primera carga.
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
+    caches.match(e.request).then(cached => {
+      if(cached) return cached;
+      return fetch(e.request).then(res => {
+        if(res && res.ok && e.request.method==='GET'){
+          const copy=res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, copy));
+        }
+        return res;
+      }).catch(() => cached);
+    })
   );
 });

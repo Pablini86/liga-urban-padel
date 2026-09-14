@@ -1,4 +1,4 @@
-import {S, esc, pShort, pFirst, calcGlobal} from './state.js';
+import {S, esc, pShort, pFirst, pById, calcGlobal} from './state.js';
 import {renderPatrocinadoresLiga} from './patrocinadores.js';
 
 export function renderLiga(lid){
@@ -58,7 +58,11 @@ export function renderInicio(lid){
         <div style="font-size:.65rem;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:.3rem">${t}</div>
         <div style="display:flex;flex-wrap:wrap;gap:.3rem">
           ${byTurno[t].sort((a,b)=>a.grupo-b.grupo).map(({grupo,cancha})=>{
-            const gps=S.players.filter(p=>p.liga===lid&&p.grupo===grupo).slice(0,4);
+            // Jugadores desde el partido ya generado (a1/a2/b1/b2), no desde
+            // p.grupo actual — si se aplicó una promoción después de crear
+            // esta jornada, p.grupo ya cambió y mostraría la formación nueva.
+            const pids=[...new Set(S.partidos.filter(m=>m.jornadaId===nextJ.id&&m.grupo===grupo).flatMap(m=>[m.a1,m.a2,m.b1,m.b2]))];
+            const gps=pids.map(pById).filter(Boolean);
             return`<div style="background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:.35rem .6rem;font-size:.72rem">
               <span style="font-family:'Bebas Neue',sans-serif;color:var(--accent);font-size:.9rem">G${grupo}</span>
               <span style="color:var(--muted2);margin:0 .3rem">·</span>

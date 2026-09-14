@@ -62,7 +62,18 @@ export function calcGroupPos(lid,g,jid){
 // ═══ FIREBASE WRITE ═══
 export async function fsSet(col,id,data){await db.collection(col).doc(id).set(data);}
 export async function fsDel(col,id){await db.collection(col).doc(id).delete();}
-export async function fsBatch(ops){const b=db.batch();ops.forEach(({op,col,id,data})=>{if(op==='set')b.set(db.collection(col).doc(id),data);if(op==='del')b.delete(db.collection(col).doc(id));});await b.commit();}
+// Firestore limita cada batch a 500 operaciones — con ligas grandes (varias
+// jornadas × 4 partidos/grupo, o borrar una liga completa) es fácil pasarse
+// de esa cifra y el commit fallaba entero sin avisar bien por qué. Se parte
+// en trozos de 450 (deja margen) que se confirman uno tras otro.
+export async function fsBatch(ops){
+  const CHUNK=450;
+  for(let i=0;i<ops.length;i+=CHUNK){
+    const b=db.batch();
+    ops.slice(i,i+CHUNK).forEach(({op,col,id,data})=>{if(op==='set')b.set(db.collection(col).doc(id),data);if(op==='del')b.delete(db.collection(col).doc(id));});
+    await b.commit();
+  }
+}
 
 // ═══ TOAST ═══
 let _tt;

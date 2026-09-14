@@ -33,7 +33,14 @@ export function renderPromoP(){
   // If jornada has partidos use snapshot, else use current grupo (new jornada)
   const gkey=jornadaHasPartidos?('grupo_j'+jnum4promo):null;
   const grupos=[...new Set(S.players.filter(p=>p.liga===lid).map(p=>(gkey?p[gkey]:null)||p.grupo))].sort((a,b)=>a-b);
-  const nextNum=Math.max(...S.jornadas.filter(j=>j.liga===lid).map(j=>j.num),0)+1;
+  // Debe coincidir exactamente con cómo applyAndCreateJornada calcula la
+  // jornada a crear (jornada seleccionada + 1) — antes esto usaba la MÁS ALTA
+  // jornada existente + 1, que no es lo mismo si la jornada seleccionada aquí
+  // no es la última. Con ese desajuste, aplicar la promoción de una jornada
+  // vieja podía crear una jornada duplicada con el mismo número que otra ya
+  // existente (dos documentos de jornada con el mismo num), y esta vista
+  // buscaba/mostraba la jornada equivocada después de aplicar.
+  const nextNum=jnum4promo+1;
 
   // Check if this promo already applied
   const existing=S.promociones.find(p=>p.liga===lid&&p.jornadaId===jId);
@@ -176,15 +183,24 @@ export async function applyAndCreateJornada(){
   ops.push({op:'set',col:'promociones',id:promo.id,data:promo});
 
   // 3. Create the next jornada — sólo si todavía faltan jornadas por jugar
+  // Y sólo si no existe ya una jornada con ese número: esto puede pasar si
+  // se aplica la promoción sobre una jornada que no es la última (p.ej. se
+  // reabrió una jornada vieja del selector). Sin este chequeo se creaba un
+  // SEGUNDO documento de jornada con el mismo num, y el resto de la app
+  // asume que num es único por liga — eso es lo que dejaba grupos
+  // incompletos/mezclados al mostrarlos.
   let newJId=null;
-  if(!isLastJornada){
+  const jornadaExistente=isLastJornada?null:S.jornadas.find(j=>j.liga===lid&&j.num===nextNum);
+  if(!isLastJornada&&!jornadaExistente){
     newJId=uid();
     const newJ={id:newJId,liga:lid,num:nextNum,fecha:'',canchas:jornada?.canchas||6,turnos:jornada?.turnos||['18:00','19:15','20:30','21:45']};
     ops.push({op:'set',col:'jornadas',id:newJId,data:newJ});
+  } else if(jornadaExistente){
+    newJId=jornadaExistente.id;
   }
 
   await fsBatch(ops);
-  toast(isLastJornada?'✓ Promoción aplicada — última jornada de la liga':'✓ Promociones aplicadas · Jornada '+nextNum+' creada');
+  toast(isLastJornada?'✓ Promoción aplicada — última jornada de la liga':(jornadaExistente?'✓ Promociones aplicadas · Jornada '+nextNum+' ya existía, no se duplicó':'✓ Promociones aplicadas · Jornada '+nextNum+' creada'));
 
   // Show quick actions
   const created=document.getElementById('promo-created');
@@ -285,13 +301,6 @@ export function onGrupoSelectChange(sel, grupoOrigen, jId){
   // Insert after the list
   const list=document.getElementById('edit-group-list');
   list.parentNode.insertBefore(swapRow, list.nextSibling);
-}
-
-// NOTA: función histórica sin uso (nada la invoca) — se conserva tal cual.
-function updGroupEdit(){
-  document.querySelectorAll('#edit-group-list .di').forEach((item,i)=>{
-    item.querySelectorAll('span')[1].textContent=i+1;
-  });
 }
 
 export async function saveGroupEdit(lid,g){

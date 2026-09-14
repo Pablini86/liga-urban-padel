@@ -45,20 +45,29 @@
   drawGrain();
 
   // Static - no animation
-
-  // Parallax on scroll
-  window.addEventListener('scroll', function(){
-    const y = window.scrollY * 0.06;
-    canvas.style.transform = 'translateY(' + y + 'px)';
-  }, {passive:true});
 })();
+
+// Parallax en scroll — antes había dos listeners de scroll haciendo lo mismo
+// (uno adentro de la IIFE de arriba con factor .06, este de afuera con
+// factor .08); el segundo pisaba al primero en cada evento así que el de
+// adentro era código muerto. Se deja solo este.
 window.addEventListener('scroll', function(){
   const y = window.scrollY;
   const tex = document.getElementById('tex');
   if(tex) tex.style.transform = 'translateY(' + (y * 0.08) + 'px)';
 }, {passive:true});
 
-if(window.innerWidth<=600){
-  document.getElementById('mobile-bar').style.display='flex';
-  document.querySelector('main').style.paddingBottom='70px';
+// Barra inferior de móvil: se decide con el ancho de pantalla. Antes solo se
+// checaba una vez al cargar, así que si el celular giraba a horizontal (o
+// una tablet cruzaba el límite de 600px al rotar) la barra no aparecía ni
+// desaparecía hasta recargar la página.
+function updateMobileBar(){
+  const bar=document.getElementById('mobile-bar');
+  const main=document.querySelector('main');
+  if(!bar||!main)return;
+  const isMobile=window.innerWidth<=600;
+  bar.style.display=isMobile?'flex':'none';
+  main.style.paddingBottom=isMobile?'70px':'';
 }
+updateMobileBar();
+window.addEventListener('resize', updateMobileBar);

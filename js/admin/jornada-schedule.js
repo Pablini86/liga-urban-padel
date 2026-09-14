@@ -243,11 +243,6 @@ export function autoAssign(){
   }
 }
 
-// ═══ GENERAR JORNADA ═══
-// NOTA: función histórica sin uso (ningún botón la invoca) — se conserva tal
-// cual estaba, incluyendo el bug preexistente de `num` sin definir.
-async function genJornada(){const lid=getActiveLiga();if(!lid){toast('Selecciona liga',1);return;}const ps=S.players.filter(p=>p.liga===lid);if(ps.length<4){toast('Mín. 4 jugadores',1);return;}const fecha=document.getElementById('jf').value;const canchas=parseInt(document.getElementById('jc').value)||6;const turnos=document.getElementById('jt').value.split('\n').map(t=>t.trim()).filter(Boolean);if(!turnos.length){toast('Define horarios',1);return;}const tempKey=`${lid}_j${num}`;const asgn=scheduleAssignments[tempKey]||{};const jId=uid();const ops=[];S.jornadas.filter(j=>j.liga===lid&&j.num===num).forEach(j=>ops.push({op:'del',col:'jornadas',id:j.id}));S.partidos.filter(p=>p.liga===lid&&p.jornada===num).forEach(p=>ops.push({op:'del',col:'partidos',id:p.id}));ops.push({op:'set',col:'jornadas',id:jId,data:{id:jId,liga:lid,num,fecha,canchas,turnos}});const grupos=[...new Set(ps.map(p=>p.grupo))].sort((a,b)=>a-b);let cnt=0;grupos.forEach((g,gi)=>{const gps=[...ps.filter(p=>p.grupo===g)].sort((a,b)=>a.orden-b.orden);if(gps.length<4)return;const[p1,p2,p3,p4]=gps;const slotEntry=Object.entries(asgn).find(([k,v])=>v===g);let turno=turnos[0],cancha='C1';if(slotEntry){const parts=slotEntry[0].split('_');turno=parts[0];cancha=parts[1];}else{turno=turnos[Math.min(Math.floor(gi/canchas),turnos.length-1)];cancha='C'+((gi%canchas)+1);}[[p1,p2,p3,p4],[p1,p3,p2,p4],[p1,p4,p2,p3]].forEach(([a1,a2,b1,b2],si)=>{const m={id:uid(),liga:lid,jornadaId:jId,jornada:num,grupo:g,set:si+1,turno,cancha,a1:a1.id,a2:a2.id,b1:b1.id,b2:b2.id,gA:null,gB:null,finalizado:false,ausente:false};ops.push({op:'set',col:'partidos',id:m.id,data:m});cnt++;});});await fsBatch(ops);document.getElementById('j-prev').innerHTML=`<div style="background:rgba(0,229,158,.05);border:1px solid rgba(0,229,158,.2);border-radius:7px;padding:.8rem"><div style="color:var(--accent3);font-weight:700">✓ Jornada ${num} — ${cnt} partidos</div></div>`;populateSels();toast(`✓ Jornada ${num} generada`);}
-
 export async function saveHorarios(){
   const lid=getActiveLiga();
   const num=parseInt(document.getElementById('jn')?.value);
@@ -413,15 +408,6 @@ export async function restaurarGruposDesdePartidos(){
 export function goToJornada(lid,num){S.activeLiga=lid;const btn=document.querySelector('.it[onclick*="jornada"]');if(btn)showAT('jornada',btn);const jnEl=document.getElementById('jn');if(jnEl){jnEl.value=num;}}
 
 export function goToImprimir(lid,jId){S.activeLiga=lid;const btn=document.querySelector('.it[onclick*="imprimir"]');if(btn)showAT('imprimir',btn);setTimeout(()=>{const imjEl=document.getElementById('imj');if(imjEl){imjEl.value=jId;renderImpPrev();}},100);}
-
-// NOTA: función histórica sin uso (nada la invoca) — se conserva tal cual
-// (estaba duplicada dos veces de forma idéntica en el archivo original).
-function enableHorarioEdit(){
-  window._jornadaLocked=false;
-  document.getElementById('sched-grid-container').style.pointerEvents='';
-  document.getElementById('sched-grid-container').style.opacity='';
-  toast('Puedes editar horarios — guarda cuando termines');
-}
 
 // Borra la jornada seleccionada en el selector "Jornada" de esta pestaña
 // junto con sus partidos. Pensado para limpiar jornadas creadas de más por
