@@ -11,6 +11,7 @@ export function getRestriccionesForTurno(lid,turno,jId){
 }
 
 export function renderRestricciones(){
+  renderRestriccionesResumen();
   const lid=getActiveLiga();
   const el=document.getElementById('restricciones-list');if(!el)return;
   const ps=S.players.filter(p=>p.liga===lid).sort((a,b)=>a.grupo-b.grupo||a.orden-b.orden);
@@ -43,6 +44,42 @@ export function renderRestricciones(){
       '</div>';
     }).join('')+
   '</div>';
+}
+
+export function renderRestriccionesResumen(){
+  const lid=getActiveLiga();
+  const el=document.getElementById('restricciones-resumen');if(!el)return;
+  const ps=S.players.filter(p=>p.liga===lid).sort((a,b)=>a.grupo-b.grupo||a.orden-b.orden);
+  const rsts=(S.restricciones||[]).filter(r=>r.liga===lid);
+  const js=S.jornadas.filter(j=>j.liga===lid).sort((a,b)=>a.num-b.num);
+  const withRst=ps.map(function(p){return{p,rsts:rsts.filter(function(r){return r.pid===p.id;})};}).filter(function(x){return x.rsts.length;});
+  if(!withRst.length){el.innerHTML='<p style="color:var(--muted2);font-size:.82rem">Sin restricciones agregadas todavía</p>';return;}
+  el.innerHTML='<div style="font-size:.74rem;color:var(--muted2);margin-bottom:.6rem">'+rsts.length+' restricci'+(rsts.length===1?'ón':'ones')+' en '+withRst.length+' jugador'+(withRst.length===1?'':'es')+'</div>'+
+    '<div style="display:grid;gap:.35rem">'+
+    withRst.map(function(x){
+      const groups={};
+      x.rsts.forEach(function(r){
+        const jLabel=r.scope==='liga'?'Liga':('J'+((js.find(function(j){return j.id===r.jornadaId;})||{}).num||'?'));
+        (groups[jLabel]=groups[jLabel]||[]).push(r.turno);
+      });
+      const parts=Object.keys(groups).map(function(jLabel){return groups[jLabel].sort().join(', ')+' ('+jLabel+')';});
+      return '<div style="display:flex;align-items:center;gap:.65rem;background:var(--card);border:1px solid var(--border);border-radius:9px;padding:.55rem .9rem;flex-wrap:wrap">'+
+        '<span style="font-family:Bebas Neue,sans-serif;font-size:.8rem;color:var(--accent);min-width:26px">G'+x.p.grupo+'</span>'+
+        '<span style="font-weight:600;font-size:.84rem;min-width:150px">'+esc(x.p.nombre)+'</span>'+
+        '<span style="font-size:.78rem;color:var(--text)">'+esc(parts.join('  ·  '))+'</span>'+
+      '</div>';
+    }).join('')+
+  '</div>';
+}
+
+export function setRstView(view){
+  const listBtn=document.getElementById('rst-view-lista'),resBtn=document.getElementById('rst-view-resumen');
+  const listWrap=document.getElementById('restricciones-list-wrap'),resWrap=document.getElementById('restricciones-resumen-wrap');
+  if(listBtn)listBtn.classList.toggle('active',view==='lista');
+  if(resBtn)resBtn.classList.toggle('active',view==='resumen');
+  if(listWrap)listWrap.style.display=view==='lista'?'':'none';
+  if(resWrap)resWrap.style.display=view==='resumen'?'':'none';
+  if(view==='resumen')renderRestriccionesResumen();
 }
 
 export function openAddRestriccion(preselectPid){

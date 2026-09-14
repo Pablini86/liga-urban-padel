@@ -3,7 +3,7 @@ import {openM, closeM} from './modal.js';
 import {showAT, renderAdmin} from './dispatch.js';
 import {checkMigrate, renderLigasAdmin, entrarLiga, volverALigas, cerrarLiga, createLiga, delLiga} from './ligas.js';
 import {addP, delP, editPNombre, reemplazarJugador, renderPlist, renderDrag, saveOrder, importExcel, filterPlayers} from './jugadores.js';
-import {renderRestricciones, openAddRestriccion, toggleRstJornada, toggleRstChip, filterRestricciones, saveRestriccion, delRestriccion} from './restricciones.js';
+import {renderRestricciones, openAddRestriccion, toggleRstJornada, toggleRstChip, filterRestricciones, saveRestriccion, delRestriccion, setRstView} from './restricciones.js';
 import {loadJornada, renderScheduleGrid, autoAssign, saveHorarios, resyncPartidosDesdeJugadores, restaurarGruposDesdePartidos, goToJornada, goToImprimir, delJornadaActual} from './jornada-schedule.js';
 import {renderCaptura, capturaGoTo, toggleModo, updateDirect, updateScore, toggleAusente, saveGrupoCaptura, borrarResultadoGrupo} from './captura.js';
 import {renderPromoP, applyAndCreateJornada, editGroupPos, onGrupoSelectChange, saveGroupEdit} from './promociones.js';
@@ -86,7 +86,7 @@ Object.assign(window, {
   showAT,
   entrarLiga, volverALigas, cerrarLiga, createLiga, delLiga,
   addP, delP, editPNombre, reemplazarJugador, saveOrder, importExcel, filterPlayers,
-  openAddRestriccion, toggleRstJornada, toggleRstChip, filterRestricciones, saveRestriccion, delRestriccion,
+  openAddRestriccion, toggleRstJornada, toggleRstChip, filterRestricciones, saveRestriccion, delRestriccion, setRstView,
   loadJornada, renderScheduleGrid, autoAssign, saveHorarios, resyncPartidosDesdeJugadores, restaurarGruposDesdePartidos, goToJornada, goToImprimir, delJornadaActual,
   renderCaptura, capturaGoTo, toggleModo, updateDirect, updateScore, toggleAusente, saveGrupoCaptura, borrarResultadoGrupo,
   renderPromoP, applyAndCreateJornada, editGroupPos, onGrupoSelectChange, saveGroupEdit,

@@ -155,10 +155,19 @@
             <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:2px">RESTRICCIONES DE HORARIO</div>
             <div style="font-size:.74rem;color:var(--muted2);margin-top:.2rem">Jugadores que no pueden jugar en ciertos turnos</div>
           </div>
+          <div style="display:flex;gap:.4rem">
+            <button id="rst-view-lista" class="rst-view-btn active" onclick="setRstView('lista')">Lista</button>
+            <button id="rst-view-resumen" class="rst-view-btn" onclick="setRstView('resumen')">Resumen</button>
+          </div>
         </div>
-        <input id="rst-search" type="text" placeholder="Buscar jugador..." oninput="filterRestricciones(this.value)"
-          style="width:100%;padding:.65rem 1rem;border-radius:9px;border:1px solid var(--border2);background:var(--card2);color:var(--text);font-size:.88rem;outline:none;box-sizing:border-box;margin-bottom:.75rem;font-family:inherit">
-        <div id="restricciones-list"></div>
+        <div id="restricciones-list-wrap">
+          <input id="rst-search" type="text" placeholder="Buscar jugador..." oninput="filterRestricciones(this.value)"
+            style="width:100%;padding:.65rem 1rem;border-radius:9px;border:1px solid var(--border2);background:var(--card2);color:var(--text);font-size:.88rem;outline:none;box-sizing:border-box;margin-bottom:.75rem;font-family:inherit">
+          <div id="restricciones-list"></div>
+        </div>
+        <div id="restricciones-resumen-wrap" style="display:none">
+          <div id="restricciones-resumen"></div>
+        </div>
       </div>
     </div>
 
