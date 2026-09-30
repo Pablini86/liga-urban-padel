@@ -1,4 +1,4 @@
-const CACHE = 'urban-padel-v3';
+const CACHE = 'urban-padel-v4';
 const ASSETS = ['/img/favicon.png', '/img/logo.png', '/manifest.json'];
 
 self.addEventListener('install', e => {

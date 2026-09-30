@@ -28,10 +28,98 @@ function openPrint(html){
   w.document.write(withBar);w.document.close();
 }
 
-export function printAnotaciones(){const d=getImpData();if(!d)return;const{liga,jornada,grupos,lid,jId}=d;const fname=`Anotaciones_Jornada${jornada.num}_${slug(liga.nombre)}`;let html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${fname}</title><style>${PCSS}.page{width:210mm;min-height:297mm;padding:0;page-break-after:always;position:relative;}.page:last-child{page-break-after:avoid;}.hdr{background:${UB};padding:5mm 15mm 4mm;display:flex;align-items:flex-end;justify-content:space-between;}.hl{font-family:'Bebas Neue',sans-serif;font-size:22pt;letter-spacing:5px;color:${UG};}.hl span{color:#fff;}.hm{text-align:right;font-size:8pt;color:#aaa;line-height:1.5;}.hm b{color:#fff;}.str{height:3mm;background:${UG};}.gp{display:flex;align-items:center;gap:4mm;margin:5mm 15mm 4mm;}.gn{background:${UG};color:${UB};font-family:'Bebas Neue',sans-serif;font-size:30pt;letter-spacing:2px;padding:1mm 5mm;border-radius:3px;line-height:1;}.sets{padding:0 15mm;}.sc{border:1.5px solid #222;border-radius:4px;margin-bottom:4mm;overflow:hidden;}.sh{background:${UB};color:${UG};padding:1.5mm 5mm;font-family:'Bebas Neue',sans-serif;font-size:12pt;letter-spacing:3px;}.st{display:grid;grid-template-columns:1fr 40mm 1fr;}.sta{padding:3mm 5mm;}.star{padding:3mm 5mm;text-align:right;}.p1{font-weight:700;font-size:10pt;}.p2{font-size:8.5pt;color:#555;margin-top:.5mm;}.ss{display:flex;align-items:center;justify-content:center;gap:3mm;border-left:1px solid #eee;border-right:1px solid #eee;}.bl{width:14mm;height:11mm;border-bottom:2.5px solid #000;display:inline-block;}.da{font-family:'Bebas Neue',sans-serif;font-size:14pt;color:#999;}.tot{margin:0 15mm;}.th{background:${UG};color:${UB};padding:1.5mm 5mm;font-family:'Bebas Neue',sans-serif;font-size:11pt;letter-spacing:2px;}.tg{display:grid;grid-template-columns:repeat(4,1fr);border:1.5px solid #222;border-top:none;}.tc{padding:2.5mm 3.5mm;border-right:1px solid #ddd;}.tc:last-child{border-right:none;}.tn{font-weight:700;font-size:9pt;border-bottom:1px solid #eee;padding-bottom:1.5mm;margin-bottom:1.5mm;}.tl{font-size:7.5pt;color:#666;margin-bottom:1.5mm;}.tb{width:100%;height:12mm;border-bottom:2.5px solid #000;display:block;margin-top:1.5mm;}.ft{position:absolute;bottom:5mm;left:0;right:0;text-align:center;font-size:7pt;color:#bbb;}</style></head><body>`;grupos.forEach(g=>{const gms=S.partidos.filter(m=>m.jornadaId===jId&&m.grupo===g).sort((a,b)=>a.set-b.set);if(!gms.length)return;const pids=[gms[0].a1,gms[0].a2,gms[0].b1,gms[0].b2];html+=`<div class="page"><div class="str"></div><div class="hdr"><div>${logoImg('9mm')}</div>
-          <div style="display:flex;align-items:center;gap:6mm">
-            ${(()=>{const pats=S.patrocinadores.filter(p=>p.logoUrl&&(p.liga===lid));return pats.slice(0,3).map(p=>'<img src="'+p.logoUrl+'" style="height:10mm;max-width:28mm;object-fit:contain;opacity:.85">').join('');})()}
-          </div><div class="hm">LIGA: <b>${esc(liga.nombre.toUpperCase())}</b><br>JORNADA <b>${jornada.num}</b> · <b>${jornada.fecha||''}</b><br>CANCHA: <b>${gms[0].cancha}</b> · <b>${gms[0].turno}</b></div></div><div class="gp"><div class="gn">GRUPO ${g}</div></div><div class="sets">${gms.map(m=>`<div class="sc"><div class="sh">SET ${m.set}</div><div class="st"><div class="sta"><div class="p1">${pFN(m.a1)}</div><div class="p2">${pFN(m.a2)}</div></div><div class="ss"><span class="bl"></span><span class="da">—</span><span class="bl"></span></div><div class="star"><div class="p1">${pFN(m.b1)}</div><div class="p2">${pFN(m.b2)}</div></div></div></div>`).join('')}</div><div class="tot"><div class="th">TOTAL · DIFERENCIAL</div><div class="tg">${pids.map(pid=>`<div class="tc"><div class="tn">${pFN(pid)}</div><div class="tl">G.G − G.P =</div><span class="tb"></span></div>`).join('')}</div></div><div class="ft" style="font-size:6pt">Urban Padel Life · ${esc(liga.nombre)}</div></div>`;});html+='</body></html>';openPrint(html);}
+// PDF real (vectorial, con jsPDF) en vez de HTML+window.print(): en iOS, si
+// el admin está agregado a la pantalla de inicio (modo standalone), no hay
+// barra de Safari ni botón Compartir, y print() en una pestaña abierta por
+// script tampoco dispara nada ahí — es una limitación de WebKit, no del
+// gesto del usuario. Generando el PDF nosotros mismos evitamos depender por
+// completo de print()/Share: el archivo se entrega como descarga directa.
+export async function printAnotaciones(){
+  const d=getImpData();if(!d)return;const{liga,jornada,grupos,lid,jId}=d;
+  const fname=`Anotaciones_Jornada${jornada.num}_${slug(liga.nombre)}.pdf`;
+  const gData=grupos.map(g=>{
+    const gms=S.partidos.filter(m=>m.jornadaId===jId&&m.grupo===g).sort((a,b)=>a.set-b.set);
+    if(!gms.length)return null;
+    return{g,gms,pids:[gms[0].a1,gms[0].a2,gms[0].b1,gms[0].b2]};
+  }).filter(Boolean);
+  if(!gData.length){toast('Esta jornada no tiene partidos generados',1);return;}
+  // La pestaña se abre YA, dentro del click (mismo motivo que
+  // exportGruposWhatsApp): si se abriera después de los await de abajo, el
+  // gesto del usuario ya habría "expirado" y algunos navegadores la
+  // bloquearían en silencio.
+  const win=window.open('','_blank');
+  if(!win){toast('Permite ventanas emergentes',1);return;}
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Generando…</title></head><body style="background:#0a0a0a;color:#999;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p>Generando PDF…</p></body></html>');
+  win.document.close();
+
+  let logoData=null;
+  try{const logo=await loadImg(LOGO_URL);logoData=invertImageData(logo).toDataURL('image/png');}
+  catch(e){/* sin logo si no carga; el PDF sigue siendo válido */}
+
+  const{jsPDF}=window.jspdf;
+  const pdf=new jsPDF({unit:'mm',format:'a4'});
+  const ugRgb=[184,212,0],ubRgb=[10,10,10],W=210,H=297,MX=15;
+
+  gData.forEach(({g,gms,pids},gi)=>{
+    if(gi>0)pdf.addPage();
+    pdf.setFillColor(...ubRgb);pdf.rect(0,0,W,24,'F');
+    if(logoData){try{pdf.addImage(logoData,'PNG',MX,7,24,9);}catch(e){}}
+    pdf.setFont('helvetica','bold');pdf.setFontSize(9);pdf.setTextColor(255,255,255);
+    pdf.text(`LIGA: ${liga.nombre.toUpperCase()}`,W-MX,9,{align:'right'});
+    pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(190,190,190);
+    pdf.text(`JORNADA ${jornada.num} · ${jornada.fecha||''}`,W-MX,14,{align:'right'});
+    pdf.text(`CANCHA: ${gms[0].cancha||''} · ${gms[0].turno||''}`,W-MX,19,{align:'right'});
+    pdf.setFillColor(...ugRgb);pdf.rect(0,24,W,3,'F');
+    pdf.setFont('helvetica','bold');pdf.setFontSize(26);pdf.setTextColor(...ugRgb);
+    pdf.text(`GRUPO ${g}`,MX,42);
+
+    let y=50;
+    gms.forEach(m=>{
+      pdf.setFillColor(...ubRgb);pdf.rect(MX,y,W-2*MX,6,'F');
+      pdf.setFont('helvetica','bold');pdf.setFontSize(10);pdf.setTextColor(...ugRgb);
+      pdf.text(`SET ${m.set}`,MX+3,y+4.3);
+      const boxY=y+6,boxH=16;
+      pdf.setDrawColor(40,40,40);pdf.setLineWidth(.3);pdf.rect(MX,boxY,W-2*MX,boxH);
+      pdf.setFont('helvetica','bold');pdf.setFontSize(10);pdf.setTextColor(0,0,0);
+      pdf.text(pFN(m.a1),MX+3,boxY+7);
+      pdf.text(pFN(m.b1),W-MX-3,boxY+7,{align:'right'});
+      pdf.setFont('helvetica','normal');pdf.setFontSize(8.5);pdf.setTextColor(90,90,90);
+      pdf.text(pFN(m.a2),MX+3,boxY+12);
+      pdf.text(pFN(m.b2),W-MX-3,boxY+12,{align:'right'});
+      const cxm=W/2;
+      pdf.setDrawColor(0,0,0);pdf.setLineWidth(.5);
+      pdf.line(cxm-16,boxY+12,cxm-6,boxY+12);
+      pdf.line(cxm+6,boxY+12,cxm+16,boxY+12);
+      pdf.setFont('helvetica','normal');pdf.setFontSize(11);pdf.setTextColor(160,160,160);
+      pdf.text('—',cxm,boxY+11,{align:'center'});
+      y=boxY+boxH+4;
+    });
+
+    pdf.setFillColor(...ugRgb);pdf.rect(MX,y,W-2*MX,6,'F');
+    pdf.setFont('helvetica','bold');pdf.setFontSize(9);pdf.setTextColor(...ubRgb);
+    pdf.text('TOTAL · DIFERENCIAL',MX+3,y+4.3);
+    const gridY=y+6,gridH=20,colW=(W-2*MX)/4;
+    pdf.setDrawColor(40,40,40);pdf.setLineWidth(.3);pdf.rect(MX,gridY,W-2*MX,gridH);
+    pids.forEach((pid,i)=>{
+      const cx0=MX+colW*i;
+      if(i>0)pdf.line(cx0,gridY,cx0,gridY+gridH);
+      pdf.setFont('helvetica','bold');pdf.setFontSize(8.5);pdf.setTextColor(0,0,0);
+      pdf.text(pFN(pid),cx0+2.5,gridY+5,{maxWidth:colW-5});
+      pdf.setFont('helvetica','normal');pdf.setFontSize(7);pdf.setTextColor(110,110,110);
+      pdf.text('G.G − G.P =',cx0+2.5,gridY+10);
+      pdf.setDrawColor(0,0,0);pdf.setLineWidth(.4);
+      pdf.line(cx0+2.5,gridY+16,cx0+colW-2.5,gridY+16);
+    });
+
+    pdf.setFont('helvetica','normal');pdf.setFontSize(7);pdf.setTextColor(180,180,180);
+    pdf.text(`Urban Padel Life · ${liga.nombre}`,W/2,H-8,{align:'center'});
+  });
+
+  const blobUrl=pdf.output('bloburl');
+  win.document.open();
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${fname}</title><style>*{box-sizing:border-box}body{background:#0a0a0a;margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:14px;padding:16px;font-family:'Outfit',Arial,sans-serif}a.dl{background:${UG};color:${UB};font-weight:700;text-decoration:none;padding:12px 26px;border-radius:6px;font-size:15px}p{color:#888;font-size:12.5px;text-align:center;margin:0;max-width:480px}</style></head><body><a class="dl" href="${blobUrl}" download="${fname}">Abrir / Guardar PDF</a><p>Al tocar el botón se abre el PDF. Desde ahí usa el ícono de Compartir para guardarlo en Archivos o mandarlo a imprimir.</p></body></html>`);
+  win.document.close();
+}
 export function invertImageData(img){const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;const cx=c.getContext('2d');cx.drawImage(img,0,0);const id=cx.getImageData(0,0,c.width,c.height);const d=id.data;for(let i=0;i<d.length;i+=4){d[i]=255-d[i];d[i+1]=255-d[i+1];d[i+2]=255-d[i+2];}cx.putImageData(id,0,0);return c;}
 export function loadImg(src){return new Promise((res,rej)=>{const img=new Image();img.crossOrigin='anonymous';img.onload=()=>res(img);img.onerror=rej;img.src=src;});}
 export function fitFont(ctx,text,maxWidth,baseSize,family){let size=baseSize;ctx.font=`500 ${size}px ${family}`;while(size>10&&ctx.measureText(text).width>maxWidth){size-=1;ctx.font=`500 ${size}px ${family}`;}return size;}
