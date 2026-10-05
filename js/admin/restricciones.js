@@ -7,7 +7,10 @@ export function getRestriccionesForTurno(lid,turno,jId){
   return S.restricciones.filter(r=>{
     if(r.liga!==lid||r.turno!==turno)return false;
     return r.scope==='liga'||(r.scope==='jornada'&&r.jornadaId===jId);
-  }).map(r=>pById(r.pid)).filter(Boolean);
+  }).map(r=>pById(r.pid)).filter(Boolean)
+    // Un jugador puede tener la misma restricción guardada dos veces (doble
+    // clic al guardar) — se cuenta una sola vez.
+    .filter((p,i,arr)=>arr.findIndex(x=>x.id===p.id)===i);
 }
 
 export function renderRestricciones(){

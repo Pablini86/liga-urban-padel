@@ -79,6 +79,8 @@ select option{background:var(--dark);}
 .sched-slot{min-height:64px;background:var(--card);border:1.5px dashed var(--border2);border-radius:8px;transition:all .15s;display:flex;align-items:center;justify-content:center;position:relative;}
 .sched-slot.drag-over{border-color:var(--accent);background:rgba(212,240,0,.05);}
 .sched-slot.filled{border-style:solid;border-color:var(--border);}
+.sched-slot.conflict{border-color:rgba(255,59,92,.6);background:rgba(255,59,92,.07);}
+.slot-conflict{font-size:.56rem;font-weight:700;color:var(--accent2);line-height:1.3;margin-top:.15rem;}
 .slot-grupo{width:100%;padding:.35rem .4rem;cursor:grab;}
 .slot-grupo-num{font-family:'Bebas Neue',sans-serif;font-size:1.05rem;color:var(--accent);}
 .slot-grupo-names{font-size:.58rem;color:var(--muted2);line-height:1.3;}

@@ -1,4 +1,4 @@
-import {S, uid, getActiveLiga, pShort, fsSet, fsBatch, toast} from './state.js';
+import {S, uid, esc, getActiveLiga, pShort, fsSet, fsBatch, toast} from './state.js';
 import {getRestriccionesForTurno} from './restricciones.js';
 import {renderImpPrev} from './imprimir.js';
 import {showAT} from './dispatch.js';
@@ -22,10 +22,54 @@ export function loadJornada(){
 
 // ═══ SCHEDULE GRID ═══
 const scheduleAssignments={};
+
+function jornadaIdActual(lid){
+  const jnum=parseInt(document.getElementById('jn')?.value)||0;
+  return (S.jornadas.find(j=>j.liga===lid&&j.num===jnum)||{}).id||null;
+}
+// Jugadores del grupo que tienen restricción para ese turno
+function jugadoresEnConflicto(lid,grupo,turno,jId){
+  const gps=S.players.filter(p=>p.liga===lid&&p.grupo===grupo);
+  return getRestriccionesForTurno(lid,turno,jId).filter(rp=>gps.find(gp=>gp.id===rp.id));
+}
+
+// Panel siempre visible arriba del grid con las restricciones que NO se están
+// cumpliendo con el acomodo actual. Se recalcula en cada render del grid
+// (arrastrar, quitar, auto-asignar, cambiar jornada/turnos, o cuando cambian
+// las restricciones en Firebase), así que siempre refleja lo que hay en pantalla.
+// Para cada grupo indica si el choque se puede evitar (y qué horarios le
+// sirven, aunque estén llenos) o si es inevitable (ningún horario le sirve a todos).
+function renderViolaciones(lid,asgn,turnos,jId){
+  const el=document.getElementById('sched-violaciones');if(!el)return;
+  const items=[];
+  Object.entries(asgn).forEach(([k,g])=>{
+    const turno=k.split('_')[0];
+    if(!turnos.includes(turno))return;
+    const afectados=jugadoresEnConflicto(lid,g,turno,jId);
+    if(!afectados.length)return;
+    const libres=turnos.filter(t=>!jugadoresEnConflicto(lid,g,t,jId).length);
+    items.push({g,turno,cancha:k.split('_')[1],afectados,libres});
+  });
+  items.sort((a,b)=>a.g-b.g);
+  if(!Object.keys(asgn).length){el.innerHTML='';return;}
+  if(!items.length){
+    el.innerHTML='<div style="background:rgba(0,229,158,.05);border:1px solid rgba(0,229,158,.2);border-radius:9px;padding:.6rem .9rem;margin-bottom:.75rem;font-size:.78rem;color:var(--accent3);font-weight:600">Todas las restricciones se cumplen con este acomodo</div>';
+    return;
+  }
+  const total=items.reduce((n,x)=>n+x.afectados.length,0);
+  el.innerHTML=`<div style="background:rgba(255,59,92,.06);border:1px solid rgba(255,59,92,.25);border-radius:9px;padding:.75rem .9rem;margin-bottom:.75rem">
+    <div style="font-weight:700;color:var(--accent2);font-size:.82rem;margin-bottom:.5rem">Restricciones sin cumplir ahora · ${total}</div>
+    ${items.map(x=>`<div style="font-size:.78rem;color:var(--muted2);padding:.25rem 0;border-top:1px solid var(--border)">
+      <span style="color:var(--accent);font-weight:700">G${x.g}</span> · ${esc(x.turno)} ${esc(x.cancha)} ·
+      <span style="color:var(--text);font-weight:600">${x.afectados.map(p=>esc(pShort(p.nombre))).join(', ')}</span> no puede${x.afectados.length>1?'n':''} a esa hora
+      <span style="display:block;font-size:.7rem;margin-top:.1rem">${x.libres.length?'Se puede evitar · horarios que le sirven a todo el grupo: '+x.libres.map(esc).join(', ')+' (si está lleno, intercámbialo con otro grupo)':'Inevitable: ningún horario le sirve a todo el grupo'}</span>
+    </div>`).join('')}
+  </div>`;
+}
 let schedDragGrupo=null,schedDragFrom=null;
 export function renderScheduleGrid(){
   const lid=getActiveLiga();
-  if(!lid){document.getElementById('sched-grid-container').innerHTML='';return;}
+  if(!lid){document.getElementById('sched-grid-container').innerHTML='';const v=document.getElementById('sched-violaciones');if(v)v.innerHTML='';return;}
   const turnos=document.getElementById('jt').value.split('\n').map(t=>t.trim()).filter(Boolean);
   const canchas=parseInt(document.getElementById('jc').value)||6;
   const grupos=[...new Set(S.players.filter(p=>p.liga===lid).map(p=>p.grupo))].sort((a,b)=>a-b);
@@ -33,6 +77,8 @@ export function renderScheduleGrid(){
   const tempKey=lid+'_j'+jnum;
   if(!scheduleAssignments[tempKey])scheduleAssignments[tempKey]={};
   const asgn=scheduleAssignments[tempKey];
+  const jId=jornadaIdActual(lid);
+  renderViolaciones(lid,asgn,turnos,jId);
   const assigned=new Set(Object.values(asgn));
   const unassigned=grupos.filter(g=>!assigned.has(g));
   const pool=document.getElementById('unassigned-pool');
@@ -69,11 +115,13 @@ export function renderScheduleGrid(){
       const slot=document.createElement('div');
       mkSlotEvents(slot,key);
       if(g){
-        slot.className='sched-slot filled';
+        const afectados=jugadoresEnConflicto(lid,g,turno,jId);
+        slot.className='sched-slot filled'+(afectados.length?' conflict':'');
         const gps=S.players.filter(p=>p.liga===lid&&p.grupo===g);
-        const names=gps.map(p=>pShort(p.nombre)).join(', ');
+        const names=gps.map(p=>esc(pShort(p.nombre))).join(', ');
         const inner=document.createElement('div');inner.className='slot-grupo';inner.draggable=true;
-        inner.innerHTML='<div class="slot-grupo-num">G'+g+'</div><div class="slot-grupo-names">'+names+'</div>';
+        inner.innerHTML='<div class="slot-grupo-num">G'+g+'</div><div class="slot-grupo-names">'+names+'</div>'+
+          (afectados.length?'<div class="slot-conflict">No puede: '+afectados.map(p=>esc(pShort(p.nombre))).join(', ')+'</div>':'');
         inner.ondragstart=function(e){schedDS(e,'slot:'+key,g);};
         inner.ondragend=schedDE;
         const rmBtn=document.createElement('button');rmBtn.className='slot-remove';rmBtn.textContent='✕';
@@ -96,11 +144,7 @@ function schedDE(e){e.target?.classList.remove('dragging');document.querySelecto
 function schedDrop(e,toKey){e.preventDefault();document.querySelectorAll('.sched-slot').forEach(s=>s.classList.remove('drag-over'));const lid=getActiveLiga();if(!lid||schedDragGrupo===null)return;
   // Check restrictions
   const turno=toKey.split('_')[0];
-  const jnum2=parseInt(document.getElementById('jn').value)||0;
-  const jId2=(S.jornadas.find(j=>j.liga===lid&&j.num===jnum2)||{}).id||null;
-  const conflictos=getRestriccionesForTurno(lid,turno,jId2);
-  const grupoPlayers=S.players.filter(p=>p.liga===lid&&p.grupo===schedDragGrupo);
-  const afectados=conflictos.filter(cp=>grupoPlayers.find(gp=>gp.id===cp.id));
+  const afectados=jugadoresEnConflicto(lid,schedDragGrupo,turno,jornadaIdActual(lid));
   if(afectados.length){
     const nombres=afectados.map(p=>pShort(p.nombre)).join(', ');
     if(!confirm('Restriccion de horario\n\n'+nombres+' no puede jugar a las '+turno+'\n\n¿Asignar de todas formas como excepcion?'))return;
@@ -120,9 +164,7 @@ export function autoAssign(){
 
   // Cuántos jugadores del grupo tienen restricción para ese turno
   function conflictos(grupo,turno){
-    const rsts=getRestriccionesForTurno(lid,turno,jId);
-    const gps=S.players.filter(p=>p.liga===lid&&p.grupo===grupo);
-    return rsts.filter(rp=>gps.find(gp=>gp.id===rp.id)).length;
+    return jugadoresEnConflicto(lid,grupo,turno,jId).length;
   }
 
   // Historial de horarios por JUGADOR (no por grupo — los grupos cambian cada
@@ -218,29 +260,14 @@ export function autoAssign(){
 
   renderScheduleGrid();
 
-  // Detalle de qué jugador choca con qué turno, para poder mostrar la lista
-  // completa (el toast solo alcanza para un conteo, no para el detalle).
-  const detalle=[];
-  Object.entries(asgn).forEach(([k,g])=>{
-    const turno=k.split('_')[0];
-    const rsts=getRestriccionesForTurno(lid,turno,jId);
-    const gps=S.players.filter(p=>p.liga===lid&&p.grupo===g);
-    rsts.filter(rp=>gps.find(gp=>gp.id===rp.id)).forEach(rp=>detalle.push({grupo:g,turno,nombre:pShort(rp.nombre)}));
-  });
-
-  const prev=document.getElementById('j-prev');
-  if(detalle.length){
-    toast('Auto-asignado · '+detalle.length+' restriccion(es) no evitables',1);
-    if(prev)prev.innerHTML=`<div style="background:rgba(255,59,92,.06);border:1px solid rgba(255,59,92,.25);border-radius:9px;padding:.75rem .9rem">
-      <div style="font-weight:700;color:var(--accent2);font-size:.82rem;margin-bottom:.5rem">Restricciones no evitables</div>
-      ${detalle.map(d=>`<div style="font-size:.78rem;color:var(--muted2);padding:.2rem 0">
-        <span style="color:var(--text);font-weight:600">${d.nombre}</span> no puede jugar a las ${d.turno} · Grupo ${d.grupo}
-      </div>`).join('')}
-    </div>`;
-  } else {
-    toast('✓ Auto-asignado respetando restricciones');
-    if(prev)prev.innerHTML='';
-  }
+  // El detalle de qué no se cumple ya lo muestra siempre el panel de arriba
+  // del grid (renderViolaciones), aquí solo el aviso rápido.
+  let total=0;
+  Object.entries(asgn).forEach(([k,g])=>{total+=conflictos(g,k.split('_')[0]);});
+  const prev=document.getElementById('j-prev');if(prev)prev.innerHTML='';
+  if(pending.length)toast('No cupieron '+pending.length+' grupo(s): faltan canchas u horarios',1);
+  else if(total)toast('Auto-asignado · '+total+' restriccion(es) sin cumplir (ver lista arriba del grid)',1);
+  else toast('✓ Auto-asignado respetando restricciones');
 }
 
 export async function saveHorarios(){

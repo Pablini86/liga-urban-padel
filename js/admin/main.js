@@ -72,7 +72,7 @@ function initListeners(){
   db.collection('partidos').onSnapshot(s=>{S.partidos=s.docs.map(d=>({id:d.id,...d.data()}));renderAdmin();});
   db.collection('jornadas').onSnapshot(s=>{S.jornadas=s.docs.map(d=>({id:d.id,...d.data()}));renderAdmin();});
   db.collection('promociones').onSnapshot(s=>{S.promociones=s.docs.map(d=>({id:d.id,...d.data()}));});
-  db.collection('restricciones').onSnapshot(s=>{S.restricciones=s.docs.map(d=>({id:d.id,...d.data()}));renderRestricciones();});
+  db.collection('restricciones').onSnapshot(s=>{S.restricciones=s.docs.map(d=>({id:d.id,...d.data()}));renderRestricciones();renderScheduleGrid();});
   db.collection('patrocinadores').onSnapshot(s=>{S.patrocinadores=s.docs.map(d=>({id:d.id,...d.data()}));renderPatrocinadores();});
 }
 
